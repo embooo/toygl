@@ -1,5 +1,4 @@
 workspace "ToyGL"
-    location "build"
 	configurations { "Debug", "Release" }
 	architecture "x64"
 	startproject "ToyGLEngine"
@@ -7,10 +6,10 @@ workspace "ToyGL"
 	outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}" -- ex: Debug-Windows-x64
 	
 project "ToyEngine"
-	location "build/%{prj.name}"
+	location "projects/%{prj.name}"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++17"
 	
-	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-	objdir    ("obj/" .. outputdir .. "/%{prj.name}")
+	targetdir ("build/bin/" .. outputdir .. "/%{prj.name}")
+	objdir    ("build/obj/" .. outputdir .. "/%{prj.name}")

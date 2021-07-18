@@ -5,6 +5,8 @@
 
 ## ToyGL specific 
 build
+obj
+bin
 
 
 # User-specific files

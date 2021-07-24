@@ -1,5 +1,6 @@
-#include <GLFW/glfw3.h>
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 #include <iostream>
 
 const char *vertexShaderSrc = R"(
@@ -25,9 +26,13 @@ const char *fragmentShaderSrc = R"(
     }
 )";
 
-GLfloat vertices[3 * 3] = {-0.75f, -0.75f * sqrtf(3) / 3.0f, 0.0f,
-                           0.75f,  -0.75f * sqrtf(3) / 3.0f, 0.0f,
-                           0.0f,   0.75f * sqrtf(3) / 3.0f,  0.0f};
+GLfloat vertices[] = { -0.75f, -0.75f, 0.0f , // bottom-left
+                        0.75f, -0.75f, 0.0f , // bottom-right
+                       -0.75f, 0.75f, 0.0f,   // top-left
+                        0.75f, 0.75f, 0.0f    // top-right
+}; 
+
+GLuint indices[] = { 0, 1, 2, /**/ 2, 1, 3 };
 
 int main() {
   int width = 800, height = 800;
@@ -57,16 +62,6 @@ int main() {
 
     return -1;
   }
-
-  // Set the dimensions of the OpenGL viewport in the window
-  glViewport(0, 0, width, height);
-
-  // Set the background color
-  glClearColor(0.33f, 0.28f, 0.22f, 1.0f);
-  // Clear the back buffer and set its color
-  glClear(GL_COLOR_BUFFER_BIT);
-  // Swap front buffer with back buffer
-  glfwSwapBuffers(window);
 
   // Create a shader object to represent the vertex shader stage
   GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -122,11 +117,18 @@ int main() {
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  // Vertex Array Objects store the state (location, format) of the vertex data
-  // stored in VBOs
+  // Vertex Array Objects store the state (configuration, buffer object) 
+  // of the vertex attributes
   GLuint VAO;
   glGenVertexArrays(1, &VAO);
   glBindVertexArray(VAO);
+
+  // Element Buffer Objects store indices
+  // We can reuse vertices to draw primitives by specifying their indices 
+  GLuint EBO;
+  glGenBuffers(1, &EBO);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
   // Specify the location and format of the vertex data
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -134,13 +136,19 @@ int main() {
 
   // Run loop
   while (!glfwWindowShouldClose(window)) {
+
+    // Specify the shader program used to draw the primitives
+    glUseProgram(shaderProgram);
+    // 
+    glBindVertexArray(VAO);
+
+    // Clear the back buffer with a color
     glClearColor(0.33f, 0.28f, 0.22f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glUseProgram(shaderProgram);
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-
+    // Draw primitives from an index buffer
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, /* Offset in EBO */ 0);
+    // Swap front buffer with back buffer
     glfwSwapBuffers(window);
 
     // Handle events

@@ -5,30 +5,32 @@ workspace "ToyGL"
 	
 	outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}" -- ex: Debug-Windows-x64
 
-	include "projects/ToyEngine/thirdparty/Glad"
-	include "projects/ToyEngine/thirdparty/GLFW"
+	include "ToyEngine/thirdparty/Glad"
+	include "ToyEngine/thirdparty/GLFW"
 
 	IncludePaths = {}
-	IncludePaths["GLFW"] = "projects/ToyEngine/thirdparty/Glad/include"
-	IncludePaths["Glad"] = "projects/ToyEngine/thirdparty/GLFW/include"
+	IncludePaths["ToyEngine"] = "ToyEngine/include/"
+	IncludePaths["GLFW"] = "ToyEngine/thirdparty/Glad/include"
+	IncludePaths["Glad"] = "ToyEngine/thirdparty/GLFW/include"
 	
 project "ToyEngine"
-	location "projects/ToyEngine"
+	location "ToyEngine"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++17"
 
 	files 
 	{ 
-		"projects/ToyEngine/src/**.h",
-		"projects/ToyEngine/src/**.cpp",
+		"ToyEngine/include/**.h",
+		"ToyEngine/src/**.cpp",
 		".clang-tidy"
 	}
 
 	includedirs
 	{
+		"%{IncludePaths.ToyEngine}",
 		"%{IncludePaths.GLFW}",
-		"%{IncludePaths.Glad}"
+		"%{IncludePaths.Glad}",
 	}
 
 	links
@@ -36,11 +38,9 @@ project "ToyEngine"
 		"GLFW", 
 		"Glad"
 	}
-
 	
-	
-	targetdir	("build/bin/" .. outputdir .. "/%{prj.name}")
-	objdir	("build/obj/" .. outputdir .. "/%{prj.name}")
+	targetdir	("ToyEngine/build/bin/" .. outputdir )
+	objdir	("ToyEngine/build/obj/" .. outputdir )
 
 	filter "system:windows"
 		systemversion "latest"

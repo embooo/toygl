@@ -6,14 +6,14 @@
 class Shader
 {
 public:
-    Shader(const std::string vertexShaderPath, const std::string fragmentShaderPath);
+    Shader(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
 
     void use() const;
 
 private:
     GLuint m_programID;
-    std::string readFile(const std::string path) const;
-    GLint checkCompileSuccess(GLuint shaderIndex) const;
-    GLint checkLinkSuccess(GLuint program) const;
-    int buildShaderProgram(const std::string vertexPath, const std::string fragmentPath);
+    static std::string readFile(const std::string& path);
+    static GLint checkCompileSuccess(GLuint shader);
+    static GLint checkLinkSuccess(GLuint program);
+    int buildShaderProgram(const std::string& vertexPath, const std::string& fragmentPath);
 };

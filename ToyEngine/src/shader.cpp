@@ -4,7 +4,7 @@
 #include <sstream>
 #include <fstream>
 
-Shader::Shader(const std::string vertexShaderPath, const std::string fragmentShaderPath)
+Shader::Shader(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
     // Has to be called after initializing an OpenGL context
 
@@ -17,7 +17,7 @@ void Shader::use() const
     glUseProgram(m_programID);
 }
 
-std::string Shader::readFile(const std::string path) const
+std::string Shader::readFile(const std::string& path) 
 {
     std::ifstream file(path, std::ios::in | std::ios::binary);
     std::string str;
@@ -26,7 +26,7 @@ std::string Shader::readFile(const std::string path) const
     {
         // Get file length in characters
         file.seekg(0, file.end); // Placing indicator at the end with a 0 offset
-        size_t length = file.tellg();
+        auto length = file.tellg();
 
         if (length != -1)
         {
@@ -47,7 +47,7 @@ std::string Shader::readFile(const std::string path) const
     return str;
 }
 
-GLint Shader::checkCompileSuccess(GLuint shader) const
+GLint Shader::checkCompileSuccess(GLuint shader)
 {
     GLint compileStatus = false;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
@@ -71,7 +71,7 @@ GLint Shader::checkCompileSuccess(GLuint shader) const
     return compileStatus;
 }
 
-GLint Shader::checkLinkSuccess(GLuint program) const
+GLint Shader::checkLinkSuccess(GLuint program)
 {
     GLint linkStatus = false;
     glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
@@ -95,7 +95,7 @@ GLint Shader::checkLinkSuccess(GLuint program) const
     return linkStatus;
 }
 
-int Shader::buildShaderProgram(const std::string vertexPath, const std::string fragmentPath) 
+int Shader::buildShaderProgram(const std::string& vertexPath, const std::string& fragmentPath) 
 {
     // This function reads and compiles the shader source code
     // specified and links them to create a shader program
@@ -135,8 +135,8 @@ int Shader::buildShaderProgram(const std::string vertexPath, const std::string f
                 {
                     // Shaders are now linked to the program
                     // We can delete them
-                    glDeleteShader(vertexShader);
-                    glDeleteShader(fragmentShader);
+                    glDetachShader(m_programID, vertexShader);
+                    glDetachShader(m_programID, fragmentShader);
                 }
             }
 

@@ -12,7 +12,7 @@ workspace "ToyGL"
 	IncludePaths["ToyEngine"] = "ToyEngine/include/"
 	IncludePaths["GLFW"] = "ToyEngine/thirdparty/Glad/include"
 	IncludePaths["Glad"] = "ToyEngine/thirdparty/GLFW/include"
-	IncludePaths["glm"] = "ToyEngine/thirdparty/glm"
+	IncludePaths["glm"]  = "ToyEngine/thirdparty/glm/"
 	
 project "ToyEngine"
 	location "ToyEngine"

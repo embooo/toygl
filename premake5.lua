@@ -12,6 +12,7 @@ workspace "ToyGL"
 	IncludePaths["ToyEngine"] = "ToyEngine/include/"
 	IncludePaths["GLFW"] = "ToyEngine/thirdparty/Glad/include"
 	IncludePaths["Glad"] = "ToyEngine/thirdparty/GLFW/include"
+	IncludePaths["glm"] = "ToyEngine/thirdparty/glm"
 	
 project "ToyEngine"
 	location "ToyEngine"
@@ -31,6 +32,7 @@ project "ToyEngine"
 		"%{IncludePaths.ToyEngine}",
 		"%{IncludePaths.GLFW}",
 		"%{IncludePaths.Glad}",
+		"%{IncludePaths.glm}"
 	}
 
 	links
@@ -40,7 +42,7 @@ project "ToyEngine"
 	}
 	
 	targetdir	("ToyEngine/build/bin/" .. outputdir )
-	objdir	("ToyEngine/build/obj/" .. outputdir )
+	objdir		("ToyEngine/build/obj/" .. outputdir )
 
 	filter "system:windows"
 		systemversion "latest"

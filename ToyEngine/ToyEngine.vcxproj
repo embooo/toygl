@@ -58,11 +58,10 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>include;thirdparty\Glad\include;thirdparty\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;thirdparty\Glad\include;thirdparty\GLFW\include;thirdparty\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalOptions>/W4 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -74,7 +73,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>include;thirdparty\Glad\include;thirdparty\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;thirdparty\Glad\include;thirdparty\GLFW\include;thirdparty\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -90,11 +89,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\shader.h" />
+    <ClInclude Include="include\Mesh.h" />
+    <ClInclude Include="include\Shader.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Mesh.cpp" />
+    <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.clang-tidy" />

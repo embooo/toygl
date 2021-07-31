@@ -19,7 +19,7 @@ public:
     void release();
 
 private:
-    GLuint m_Id;
+    GLuint m_Id = 0;
     static std::string readFile(const std::string& path);
     static std::string glShaderTypeToString(GLenum shaderType);
     static GLint checkShaderCompileSuccess(GLenum shaderType, GLuint shader);

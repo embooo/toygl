@@ -21,7 +21,8 @@ public:
 private:
     GLuint m_Id;
     static std::string readFile(const std::string& path);
-    static GLint checkShaderCompileSuccess(GLuint shader);
+    static std::string glShaderTypeToString(GLenum shaderType);
+    static GLint checkShaderCompileSuccess(GLenum shaderType, GLuint shader);
     static GLint checkShaderProgramLinkSuccess(GLuint program);
     int buildShaderProgram(const std::string& vertexPath, const std::string& fragmentPath);
 };

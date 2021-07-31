@@ -12,10 +12,11 @@ struct Vertex
 {
     Vertex(const glm::vec3 position)
         : position(position), normal(), texcoord(), color() {}
+    Vertex& addColor(const glm::vec3& other) { color = other; return *this; }
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 texcoord;
-    glm::vec4 color;
+    glm::vec3 color;
 };
 
 class Mesh

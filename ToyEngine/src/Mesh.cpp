@@ -50,7 +50,7 @@ void Mesh::setup()
     glVertexAttribPointer(2, 2 /* number of components */ , GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, texcoord));
 
     glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 4 /* number of components */ , GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, color));
+    glVertexAttribPointer(3, 3 /* number of components */ , GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, color));
 
     // Finished modifying our buffers and array
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -60,7 +60,7 @@ void Mesh::setup()
 
 void Mesh::draw(const Shader& shader)
 {
-    shader.use();
     glBindVertexArray(m_VertexArray);
+    shader.use();
     glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0);
 }

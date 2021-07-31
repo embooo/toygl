@@ -49,7 +49,6 @@ project "ToyEngine"
 
 	filter "configurations:Debug"
 		runtime "Debug"
-		buildoptions { "/W4" }
 		symbols "on"
 
 	filter "configurations:Release"

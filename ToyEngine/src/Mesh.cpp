@@ -13,6 +13,36 @@ Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indic
     setup();
 }
 
+Mesh::Mesh(Mesh&& other)
+{
+    m_VertexArray   = other.m_VertexArray;
+    m_VertexBuffer  = other.m_VertexBuffer;
+    m_ElementBuffer = other.m_ElementBuffer;
+
+    m_Vertices = std::move(other.m_Vertices);
+    m_Indices  = std::move(other.m_Indices);
+}
+
+Mesh& Mesh::operator=(Mesh&& other)
+{
+    if(this != &other)
+    {
+        release();
+        m_VertexArray   = other.m_VertexArray;
+        m_VertexBuffer  = other.m_VertexBuffer;
+        m_ElementBuffer = other.m_ElementBuffer;
+
+        m_Vertices = std::move(other.m_Vertices);
+        m_Indices  = std::move(other.m_Indices);
+    }
+
+    return *this;
+}
+
+Mesh::~Mesh()
+{
+}
+
 /// <summary>
 /// 
 /// </summary>
@@ -63,4 +93,15 @@ void Mesh::draw(const Shader& shader)
     glBindVertexArray(m_VertexArray);
     shader.use();
     glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0);
+}
+
+void Mesh::release()
+{
+    glDeleteBuffers(1, &m_VertexBuffer);
+    glDeleteBuffers(1, &m_ElementBuffer);
+    glDeleteVertexArrays(1, &m_VertexArray);
+
+    m_VertexBuffer  = 0;
+    m_ElementBuffer = 0;
+    m_VertexArray   = 0;
 }

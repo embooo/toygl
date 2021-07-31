@@ -24,6 +24,17 @@ class Mesh
 public:
     Mesh();
     Mesh(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices);
+
+    // Delete the copy constructor/assignment.
+    // RAII and hidden destructor calls
+    // https://www.khronos.org/opengl/wiki/Common_Mistakes#The_Object_Oriented_Language_Problem
+    Mesh(const Mesh&) = delete;
+    Mesh& operator=(const Mesh&) = delete;
+
+    Mesh (Mesh&& other);
+    Mesh& operator=(Mesh&& other);
+
+    ~Mesh();
     void setup();
     void draw(const Shader& shader);
     void release();

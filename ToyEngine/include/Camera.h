@@ -1,0 +1,95 @@
+#pragma once
+
+#include <string>
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include "Event.h"
+#include "KeyboardEvent.h"
+#include "MouseEvent.h"
+#include "IObserver.h"
+
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
+#include "glm/gtx/rotate_vector.hpp"
+#include "glm/gtx/vector_angle.hpp"
+
+struct ViewFrustum
+{
+    ViewFrustum()
+        : fieldOfView(glm::radians(45.0f)), aspectRatio(1.0f), zNear(0.1f), zFar(100.0f) {}; 
+
+    ViewFrustum(float fov, float aspectRatio, float zNear = 0.1f, float zFar = 100.0f)
+        : fieldOfView(fov), aspectRatio(aspectRatio), zNear(zNear), zFar(zFar) {};
+
+    // Data to build a projection matrix 
+    // Angle (in radians) between the side or top/bottom planes of the frustum
+    float fieldOfView;  
+    // Aspect ratio of the viewing window
+    float aspectRatio;
+    // Near depth limit - Distance in the Z-axis between the camera and near plane
+    float zNear; 
+    // Far depth limit - Distance in the Z-axis between the camera and far plane
+    float zFar;  
+};
+
+namespace Axis
+{
+    static const glm::vec3 X = glm::vec3(1.0f, 0.0f, 0.0f);
+    static const glm::vec3 Y = glm::vec3(0.0f, 1.0f, 0.0f);
+    static const glm::vec3 Z = glm::vec3(0.0f, 0.0f, 1.0f);
+};
+
+
+
+class Camera : public IObserver
+{
+public:
+    Camera();
+    Camera(const std::string& name,   
+    const ViewFrustum& frustum,
+    const glm::vec3& pos = glm::vec3(0.0f, 0.0f, 0.0f),
+    const glm::vec3& target = glm::vec3(0.0f, 0.0f, -1.0f),
+    const glm::vec3& up  = glm::vec3(0.0f, 1.0f, 0.0f) );
+
+    const glm::mat4& getViewMat() const;
+    const glm::mat4& getProjectionMat() const;
+
+    void move(const glm::vec3& dir, float deltaTime);
+
+    virtual void onUpdate(Event& event) override;
+    void update(const float dt = 0.1f) ;
+
+    // Mouse/Keyboard events handler
+    virtual void onKeyPressed(KeyEvent& event);
+    virtual void onKeyReleased(KeyEvent& event);
+    virtual void onMouseClickEvent(MouseClick& event);
+    virtual void onMouseMove(MouseMove& event);
+    virtual void onMouseScroll(MouseScroll& event);
+
+    
+private:
+
+    std::string name;
+
+    // Viewing volume - everything inside is visible
+    ViewFrustum viewFrustum;
+
+    // Matrices to feed to shaders
+    glm::mat4 view;
+    glm::mat4 projection;
+
+    // Default position of the camera - apex of the view frustum
+    glm::vec3 position;
+    // LookAt direction
+    glm::vec3 target;
+    // Normalized vector - camera's up axis
+    glm::vec3 up;
+
+    float m_BaseSpeed;
+
+    bool bLookAround;
+    bool bMoveUp, bMoveDown, bMoveLeft, bMoveRight;
+
+};

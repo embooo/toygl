@@ -3,10 +3,16 @@
 #include <sstream>
 
 #include "Shader.h"
+#include <glm/gtc/type_ptr.hpp>
 
-Shader::Shader(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
+Shader::Shader()
 {
-    buildShaderProgram(vertexShaderPath, fragmentShaderPath);
+    m_Program = 0;
+}
+
+Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath)
+{
+    build(vertexPath, fragmentPath);
 }
 
 Shader& Shader::operator=(Shader&& other)
@@ -14,7 +20,7 @@ Shader& Shader::operator=(Shader&& other)
     if(this != &other)
     {
         release();
-        std::swap(m_Id, other.m_Id);
+        std::swap(m_Program, other.m_Program);
     }
 
     return *this;
@@ -27,13 +33,55 @@ Shader::~Shader()
 
 void Shader::use() const
 {
-    glUseProgram(m_Id);
+    glUseProgram(m_Program);
 }
 
 void Shader::release()
 {
-    glDeleteProgram(m_Id);
-    m_Id = 0;
+    glDeleteProgram(m_Program);
+    m_Program = 0;
+}
+
+void Shader::setInt(const std::string& name, int value)
+{
+    GLint location = glGetUniformLocation(m_Program, name.c_str());
+    glUniform1i(location, value);
+}
+
+void Shader::setFloat(const std::string& name, float value)
+{
+    GLint location = glGetUniformLocation(m_Program, name.c_str());
+    glUniform1f(location, value);
+}
+
+void Shader::setFloat2(const std::string& name, const glm::vec2& value)
+{
+    GLint location = glGetUniformLocation(m_Program, name.c_str());
+    glUniform2f(location, value.x, value.y);
+}
+
+void Shader::setFloat3(const std::string& name, const glm::vec3& value)
+{
+    GLint location = glGetUniformLocation(m_Program, name.c_str());
+    glUniform3f(location, value.x, value.y, value.z);
+}
+
+void Shader::setFloat4(const std::string& name, const glm::vec4& value)
+{
+    GLint location = glGetUniformLocation(m_Program, name.c_str());
+    glUniform4f(location, value.x, value.y, value.z, value.w);
+}
+
+void Shader::setMat3(const std::string& name, const glm::mat3& matrix)
+{
+    GLint location = glGetUniformLocation(m_Program, name.c_str());
+    glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+}
+
+void Shader::setMat4(const std::string& name, const glm::mat4& matrix)
+{
+    GLint location = glGetUniformLocation(m_Program, name.c_str());
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
 std::string Shader::readFile(const std::string& path) 
@@ -57,12 +105,12 @@ std::string Shader::readFile(const std::string& path)
         }
         else
         {
-            std::cout << "Could not read " << path << ".\n";
+            std::cerr << "Could not read " << path << ".\n";
         }
     }
     else
     {   
-        std::cout << "Could not open " << path << ".\n";
+        std::cerr << "Could not open " << path << ".\n";
     }
 
     return str;
@@ -105,7 +153,7 @@ GLint Shader::checkShaderCompileSuccess(GLenum shaderType, GLuint shader)
         errorLog.resize(logLength);
         glGetShaderInfoLog(shader, logLength, &logLength, &errorLog[0]);
 
-        std::cout << glShaderTypeToString(shaderType) << " compilation encountered errors : \n" << errorLog << "\n";
+        std::cerr << glShaderTypeToString(shaderType) << " compilation encountered errors : \n" << errorLog << "\n";
 
         glDeleteShader(shader);
     }
@@ -135,7 +183,7 @@ GLint Shader::checkShaderProgramLinkSuccess(GLuint program)
         errorLog.resize(logLength);
         glGetShaderInfoLog(program, logLength, &logLength, &errorLog[0]);
 
-        std::cout << "Shader program linkage encountered errors : \n" << errorLog << "\n";
+        std::cerr << "Shader program linkage encountered errors : \n" << errorLog << "\n";
 
         glDeleteProgram(program);
     }
@@ -143,10 +191,10 @@ GLint Shader::checkShaderProgramLinkSuccess(GLuint program)
     return linkStatus;
 }
 
-int Shader::buildShaderProgram(const std::string& vertexPath, const std::string& fragmentPath) 
+int Shader::build(const std::string& vertexPath, const std::string& fragmentPath) 
 {
     // Has to be called after initializing an OpenGL context
-    // This function reads and compiles the shader source codes
+    // This function compiles the shader source codes
     // specified and links them to create a complete shader program
 
     const std::string& vertexShaderFile   = readFile(vertexPath);
@@ -176,22 +224,22 @@ int Shader::buildShaderProgram(const std::string& vertexPath, const std::string&
             {
                 std::cout << "Fragment shader compiled successfully (" << fragmentPath << "). \n";
                 // Create the shader program by linking the shaders 
-                m_Id = glCreateProgram();
+                m_Program = glCreateProgram();
 
                 // Specify the shaders that are to be linked
-                glAttachShader(m_Id, vertexShader);
-                glAttachShader(m_Id, fragmentShader);
+                glAttachShader(m_Program, vertexShader);
+                glAttachShader(m_Program, fragmentShader);
 
                 // Link the shaders to create the complete shader program
-                glLinkProgram(m_Id);
+                glLinkProgram(m_Program);
 
-                if (checkShaderProgramLinkSuccess(m_Id))
+                if (checkShaderProgramLinkSuccess(m_Program))
                 {
                     std::cout << "Shader program built successfully. \n\n";
                     // Shaders are now linked to the program
                     // We can delete them
-                    glDetachShader(m_Id, vertexShader);
-                    glDetachShader(m_Id, fragmentShader);
+                    glDetachShader(m_Program, vertexShader);
+                    glDetachShader(m_Program, fragmentShader);
                     glDeleteShader(vertexShader);
                     glDeleteShader(fragmentShader);
                 }
@@ -202,7 +250,7 @@ int Shader::buildShaderProgram(const std::string& vertexPath, const std::string&
         return 0;
     }
 
-    std::cout << "Could not build shader program.\n";
+    std::cerr << "Could not build shader program.\n";
 
     return -1;
 }

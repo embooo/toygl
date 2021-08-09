@@ -36,7 +36,7 @@ public:
 
     ~Mesh();
     void setup();
-    void draw(const Shader& shader);
+    void draw();
     void release();
 private:
     GLuint m_VertexArray;

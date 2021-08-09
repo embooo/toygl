@@ -88,10 +88,9 @@ void Mesh::setup()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void Mesh::draw(const Shader& shader)
+void Mesh::draw()
 {
     glBindVertexArray(m_VertexArray);
-    shader.use();
     glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0);
 }
 

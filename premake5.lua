@@ -40,6 +40,11 @@ project "ToyEngine"
 		"GLFW", 
 		"Glad"
 	}
+
+	defines
+	{
+		"GLFW_INCLUDE_NONE"
+	}
 	
 	targetdir	("ToyEngine/build/bin/" .. outputdir )
 	objdir		("ToyEngine/build/obj/" .. outputdir )

@@ -21,12 +21,13 @@ public:
     void render();
     virtual void update(float deltaTime);
     virtual void onUpdate(Event& event) override;
-
+    inline float getDeltaTime();
     virtual void onWindowResize(WindowResizeEvent& event);
 
     static void printSystemInfo();
 
 private:
+
     // TODO : remove
     Mesh m_Cube;
     Camera m_Camera;

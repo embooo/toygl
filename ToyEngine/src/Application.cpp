@@ -12,7 +12,7 @@ Application::Application()
 
 
     // Mesh test
-    m_Camera = Camera("DefaultCam", ViewFrustum(45.0f, m_Window->width()/m_Window->height()));
+    m_Camera = Camera("DefaultCam", m_Window.get(), ViewFrustum(45.0f, (float)m_Window->width(), (float)m_Window->height(), 0.1f, 100.0f), glm::vec3(0.0f, 0.0f, -2.0f));
     m_Shader = Shader("./data/shaders/vertex.glsl", "./data/shaders/fragment.glsl");
 
     // Register to observer list to get updated when events occur
@@ -26,16 +26,37 @@ Application::Application()
 
     std::vector<Vertex> cubeVertices
     {
-        Vertex(glm::vec3(-0.5f, -0.5f, 0.5f)).addColor(glm::vec3(-0.5f, -0.5f, 0.5f)),
-        Vertex(glm::vec3(0.5f, -0.5f, 0.5f)).addColor(glm::vec3(0.5f, -0.5f, 0.5f)),
-        Vertex(glm::vec3(0.5f, 0.5f, 0.5f)).addColor(glm::vec3(0.5f, 0.5f, 0.5f)),
-        Vertex(glm::vec3(-0.5f, 0.5f, 0.5f)).addColor(glm::vec3(-0.5f, 0.5f, 0.5f)),
-        Vertex(glm::vec3(-0.5f, -0.5f, -0.5f)).addColor(glm::vec3(-0.5f, -0.5f, -0.5f)),
-        Vertex(glm::vec3(0.5f, -0.5f, -0.5f)).addColor(glm::vec3(0.5f, -0.5f, -0.5f)),
-        Vertex(glm::vec3(0.5f, 0.5f, -0.5f)).addColor(glm::vec3(0.5f, 0.5f, -0.5f)),
-        Vertex(glm::vec3(-0.5f, 0.5f, -0.5f)).addColor(glm::vec3(-0.5f, 0.5f, -0.5f))
+        Vertex(glm::vec3(-1.0, -1.0,  1.0f)).addColor(glm::vec3(-0.5f, -0.5f, -0.5f )), // 0
+        Vertex(glm::vec3( 1.0, -1.0,  1.0f)).addColor(glm::vec3( 0.5f, -0.5f, -0.5f )), // 1
+        Vertex(glm::vec3( 1.0,  1.0,  1.0) ).addColor(glm::vec3( 0.5f, -0.5f, 0.5f  )), // 2
+        Vertex(glm::vec3(-1.0,  1.0,  1.0) ).addColor(glm::vec3(-0.5f, -0.5f, 0.5f  )), // 3
+                            
+        Vertex(glm::vec3(-1.0, -1.0, -1.0f)).addColor(glm::vec3(-0.5f, 0.5f, -0.5f  )), // 4
+        Vertex(glm::vec3( 1.0, -1.0, -1.0f)).addColor(glm::vec3( 0.5f, 0.5f, -0.5f  )), // 5
+        Vertex(glm::vec3( 1.0,  1.0, -1.0) ).addColor(glm::vec3( 0.5f, 0.5f, 0.5f   )), // 6
+        Vertex(glm::vec3(-1.0,  1.0, -1.0) ).addColor(glm::vec3(-0.5f, 0.5f, 0.5f   ))  // 7
     };
-    std::vector<GLuint> cubeIndices = {0, 1, 2,  0, 2, 3, /**/ 4,5,6, 4,6,7, /**/4,0,3, 4,3,7, /**/5,1,2, 5,2,6, /**/ 0,1,5, 0,5,4, /**/ 3,2,6, 3,6,7};
+
+    std::vector<GLuint> cubeIndices = {
+ 		// front
+		0, 1, 2,
+		2, 3, 0,
+		// right
+		1, 5, 6,
+		6, 2, 1,
+		// back
+		7, 6, 5,
+		5, 4, 7,
+		// left
+		4, 0, 3,
+		3, 7, 4,
+		// bottom
+		4, 5, 1,
+		1, 0, 4,
+		// top
+		3, 2, 6,
+		6, 7, 3
+    };
 
     m_Cube = Mesh(cubeVertices, cubeIndices );
 
@@ -46,20 +67,16 @@ void Application::run()
 {
     while(!m_Window->isClosed())
     {
-        render();
         // Compute delta time
-        float time = (float)glfwGetTime();
-        float deltaTime = time - m_lastFrameTime;
-        m_lastFrameTime = time;
-
-        update(deltaTime);
+        update( getDeltaTime() );
+        
+        render();
     }
 }
 
 void Application::render()
 {
     m_glRenderer->init();
-    //m_glRenderer->setViewport(m_Window->width(), m_Window->height());
     m_glRenderer->clear();
 
     m_Shader.use();
@@ -70,12 +87,12 @@ void Application::render()
     m_Cube.draw();
 
     m_Window->swapBuffers();
-    glfwPollEvents();
 }
 
 void Application::update(float deltaTime)
 {
     m_Camera.update(deltaTime);
+    glfwPollEvents();
 }
 
 void Application::onUpdate(Event& event)
@@ -86,6 +103,15 @@ void Application::onUpdate(Event& event)
             onWindowResize(static_cast<WindowResizeEvent&>(event)); 
             break;
     }
+}
+
+float Application::getDeltaTime()
+{
+    float time = (float)glfwGetTime();
+    float deltaTime = time - m_lastFrameTime;
+    m_lastFrameTime = time;
+
+    return deltaTime;
 }
 
 void Application::onWindowResize(WindowResizeEvent& event)

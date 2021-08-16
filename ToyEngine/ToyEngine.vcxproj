@@ -58,6 +58,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>include;thirdparty\Glad\include;thirdparty\GLFW\include;thirdparty\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
@@ -73,6 +74,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>include;thirdparty\Glad\include;thirdparty\GLFW\include;thirdparty\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -89,16 +91,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\Application.h" />
+    <ClInclude Include="include\Camera.h" />
+    <ClInclude Include="include\Event.h" />
+    <ClInclude Include="include\IObserver.h" />
+    <ClInclude Include="include\ISubject.h" />
+    <ClInclude Include="include\KeyboardEvent.h" />
     <ClInclude Include="include\Mesh.h" />
+    <ClInclude Include="include\MouseEvent.h" />
+    <ClInclude Include="include\ObserverInterface\Observer.h" />
+    <ClInclude Include="include\ObserverInterface\Subject.h" />
+    <ClInclude Include="include\OpenGLRenderer.h" />
     <ClInclude Include="include\Shader.h" />
+    <ClInclude Include="include\Window.h" />
+    <ClInclude Include="include\WindowEvent.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\Event.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
+    <ClCompile Include="src\OpenGLRenderer.cpp" />
     <ClCompile Include="src\Shader.cpp" />
+    <ClCompile Include="src\Window.cpp" />
     <ClCompile Include="src\main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\.clang-tidy" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="thirdparty\GLFW\GLFW.vcxproj">

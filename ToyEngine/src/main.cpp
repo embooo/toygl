@@ -1,85 +1,91 @@
 #include <array>
 #include <iostream>
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
-#include "Shader.h"
+#include "Camera.h"
 #include "Mesh.h"
+#include "Shader.h"
+#include "Application.h"
 
-std::vector<Vertex> vertices = 
-{
-    Vertex(glm::vec3(-0.75f, -0.75f, 0.0f)).addColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)),
-    Vertex(glm::vec3(0.75f,  -0.75f, 0.0f)).addColor(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)),
-    Vertex(glm::vec3(-0.75f, 0.75f,  0.0f)).addColor(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)),
-    Vertex(glm::vec3(0.75f,  0.75f,  0.0f)).addColor(glm::vec4(0.5f, 0.0f, 0.0f, 1.0f))
-};
+//#include "glm/gtc/matrix_transform.hpp"
 
-
-std::vector<GLuint> indices = {0, 1, 2, /**/ 2, 1, 3};
+//std::vector<Vertex> vertices = 
+//{
+//    Vertex(glm::vec3(-0.75f, -0.75f, 0.0f)).addColor(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)),
+//    Vertex(glm::vec3(0.75f,  -0.75f, 0.0f)).addColor(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)),
+//    Vertex(glm::vec3(-0.75f, 0.75f,  0.0f)).addColor(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)),
+//    Vertex(glm::vec3(0.75f,  0.75f,  0.0f)).addColor(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f))
+//};
+//
+//std::vector<Vertex> cubeVertices
+//{
+//    Vertex(glm::vec3(-0.5f, -0.5f, 0.5f) ).addColor(glm::vec3(-0.5f, -0.5f, 0.5f)), 
+//    Vertex(glm::vec3(0.5f, -0.5f, 0.5f)  ).addColor(glm::vec3(0.5f, -0.5f, 0.5f)),
+//    Vertex(glm::vec3(0.5f, 0.5f, 0.5f)   ).addColor(glm::vec3(0.5f, 0.5f, 0.5f)),
+//    Vertex(glm::vec3(-0.5f, 0.5f, 0.5f)  ).addColor(glm::vec3(-0.5f, 0.5f, 0.5f)),
+//    Vertex(glm::vec3(-0.5f, -0.5f, -0.5f)).addColor(glm::vec3(-0.5f, -0.5f, -0.5f)),
+//    Vertex(glm::vec3(0.5f, -0.5f, -0.5f) ).addColor(glm::vec3(0.5f, -0.5f, -0.5f)),
+//    Vertex(glm::vec3(0.5f, 0.5f, -0.5f)  ).addColor(glm::vec3(0.5f, 0.5f, -0.5f)),
+//    Vertex(glm::vec3(-0.5f, 0.5f, -0.5f) ).addColor(glm::vec3(-0.5f, 0.5f, -0.5f))
+//};
+//
+//
+//std::vector<GLuint> indices = {0, 1, 2, /**/ 2, 1, 3};
+//std::vector<GLuint> cubeIndices = {0, 1, 2,  0, 2, 3, /**/ 4,5,6, 4,6,7, /**/4,0,3, 4,3,7, /**/5,1,2, 5,2,6, /**/ 0,1,5, 0,5,4, /**/ 3,2,6, 3,6,7};
 
 
 int main() {
 
-  glfwInit();
+  Application app;
 
-  int width = 800, height = 800;
+  app.printSystemInfo();
+  app.run();
 
-  // Set GLFW to use modern OpenGL with core profile
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  return 0;
 
-  // Create GLFW Window
-  GLFWwindow *window = glfwCreateWindow(width, height, "TGLEngine", nullptr, nullptr);
-  if (window == nullptr) 
-  {
-    std::cerr << "Failed to create GLFW window\n";
-    glfwTerminate();
+  //Shader defaultShader("./data/shaders/vertex_default.glsl", "./data/shaders/fragment_default.glsl");
+  //Shader customShader("./data/shaders/vertex.glsl", "./data/shaders/fragment.glsl");
 
-    return -1;
-  }
+  //Mesh mesh(vertices, indices);
+  //Mesh cube(cubeVertices, cubeIndices);
 
-  // Enable GLFW window
-  glfwMakeContextCurrent(window);
+  //Camera camera("DefaultCamera", ViewFrustum(), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, -1.0f));
 
-  // Load all OpenGL functions
-  if (!gladLoadGL()) 
-  {
-    std::cerr << "Failed to initialize OpenGL context\n";
+  //// Setup matrices
+  //// Init identity matrices
+  //glm::mat4 model = glm::identity<glm::mat4>(); // Local space to World space
 
-    return -1;
-  }
+  //// Discard fragments that fail the depth test
+  //glEnable(GL_DEPTH_TEST);
 
-  Shader defaultShader("./data/shaders/vertex_default.glsl", 
-      "./data/shaders/fragment_default.glsl");
+  //// Run loop
+  //while (!window.isClosed()) 
+  //{
+  //  // Specify back buffer's clear color
+  //  glClearColor(0.33f, 0.28f, 0.22f, 1.0f);
+  //  // Clear depth buffer
+  //  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  Shader customShader("./data/shaders/vertex.glsl", 
-      "./data/shaders/fragment.glsl");
+  //  // Specify which shader program to use
+  //  customShader.use();
 
-  Mesh mesh(vertices, indices);
-  
+  //  // Configure shader uniforms
+  //  model = glm::rotate(model, glm::radians(0.1f), glm::vec3(1.0f, 0.0f, 1.0f));
 
-  // Run loop
-  while (!glfwWindowShouldClose(window)) 
-  {
-    // Clear the back buffer with a color
-    glClearColor(0.33f, 0.28f, 0.22f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+  //  customShader.setMat4("model", model);
+  //  customShader.setMat4("view", camera.getViewMat());
+  //  customShader.setMat4("projection", camera.getProjectionMat());
 
-    // Draw primitives from an index buffer
-    mesh.draw(customShader);
+  //  // Draw object using current shader 
+  //  cube.draw();
 
-    // Swap front buffer with back buffer
-    glfwSwapBuffers(window);
+  //  window.update();
+  //}
 
-    // Handle events
-    glfwPollEvents();
-  }
-
-  // Delete window handle
-  glfwDestroyWindow(window);
-  glfwTerminate();
+  //// Cleanup
+  //mesh.release();
+  //cube.release();
+  //defaultShader.release();
+  //customShader.release();
 
   return 0;
 }

@@ -110,6 +110,12 @@ void Window::notify(Event& event)
     }
 }
 
+void Window::setCursorVisibility(bool visible)
+{
+    int value = visible ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN;
+    glfwSetInputMode(m_pWindow, GLFW_CURSOR, value);
+}
+
 void Window::attach(IObserver* observer)
 {
     m_Observers.push_back(observer);

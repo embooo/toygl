@@ -5,11 +5,12 @@
 OpenGLRenderer::OpenGLRenderer()
     : clearColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.1f))
 {
-    //glEnable(GL_DEPTH);  
 }
 
 void OpenGLRenderer::init()
 {
+    glEnable(GL_CULL_FACE);  
+    glEnable(GL_DEPTH);  
     glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
 }
 

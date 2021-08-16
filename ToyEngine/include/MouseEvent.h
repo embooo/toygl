@@ -8,12 +8,12 @@ public:
     MouseScroll(double xoffset, double yoffset)
         : m_Type(EventType::MouseScroll), m_xOffset(xoffset), m_yOffset(yoffset) {}
 
-    float getXOffset() { return m_xOffset; }
-    float getYOffset() { return m_yOffset; }
+    double getXOffset() { return m_xOffset; }
+    double getYOffset() { return m_yOffset; }
 
     virtual EventType getType() const { return m_Type; }
     EventType m_Type;
-    float m_xOffset, m_yOffset;
+    double m_xOffset, m_yOffset;
 };
 
 class MouseMove : public Event
@@ -43,6 +43,10 @@ public:
     int m_Button;
     int m_Action;
     int m_Mods;
+
+    double getX() { return m_xPos; }
+    double getY() { return m_yPos; }
+    double m_xPos, m_yPos;
 
     virtual EventType getType() const { return m_Type; }
 

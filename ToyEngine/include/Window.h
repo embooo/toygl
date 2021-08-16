@@ -33,6 +33,9 @@ public:
     virtual void detach(IObserver* observer) override;
     virtual void notify(Event& event) override;
 
+    // Helper function
+    void setCursorVisibility(bool hidden = false);
+
     // Getters & setters
     int height();
     int width();

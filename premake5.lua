@@ -13,6 +13,7 @@ workspace "ToyGL"
 	IncludePaths["GLFW"] = "ToyEngine/thirdparty/Glad/include"
 	IncludePaths["Glad"] = "ToyEngine/thirdparty/GLFW/include"
 	IncludePaths["glm"]  = "ToyEngine/thirdparty/glm/"
+	IncludePaths["tinygltf"]  = "ToyEngine/thirdparty/tinygltf/"
 	
 project "ToyEngine"
 	location "ToyEngine"
@@ -32,7 +33,8 @@ project "ToyEngine"
 		"%{IncludePaths.ToyEngine}",
 		"%{IncludePaths.GLFW}",
 		"%{IncludePaths.Glad}",
-		"%{IncludePaths.glm}"
+		"%{IncludePaths.glm}",
+		"%{IncludePaths.tinygltf}"
 	}
 
 	links

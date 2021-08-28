@@ -69,13 +69,6 @@ void Camera::update(float deltaTime)
 
     if (bMoveRight) move(right, deltaTime);
     if (bMoveLeft)  move(-right, deltaTime);
-
-    
-    if(bOutdatedViewMatrix)
-    {
-        updateViewMatrix();
-        bOutdatedViewMatrix = false;
-    }
 }
 
 void Camera::onKeyPressed(KeyEvent& event)
@@ -123,7 +116,6 @@ void Camera::onMouseClickEvent(MouseClick& event)
     
     if(event.m_Button == GLFW_MOUSE_BUTTON_LEFT && event.m_Action == GLFW_PRESS )
     {
-        firstClick = true;
         lookAroundState = true;
         m_WindowHandle->setCursorVisibility(false);
     }
@@ -184,5 +176,5 @@ void Camera::rotate(float deltaTime)
 
     front = glm::normalize(front);
 
-    bOutdatedViewMatrix = true; 
+    updateViewMatrix();
 }

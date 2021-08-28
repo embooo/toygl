@@ -106,7 +106,6 @@ private:
     float m_deltaTime;
     float pitch = 0.0f;
     float yaw = -90.0f;
-    bool bOutdatedViewMatrix = true;
     bool firstClick = true;
     bool bMouseMoved = false;
     bool bMoveUp = false, bMoveDown = false, bMoveFront =false, bMoveBack = false, bMoveLeft = false, bMoveRight = false;

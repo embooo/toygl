@@ -9,5 +9,6 @@
 ## ToyGL specific 
 build
 obj
+**/bin/Debug*
 ToyEngine/*.vcxproj.*
 .sln

@@ -1,2 +1,2 @@
-# toygl
-Toy opengl rendering engine
+# ToyGL
+OpenGL rendering engine 

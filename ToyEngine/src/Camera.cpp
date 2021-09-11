@@ -6,7 +6,7 @@ Camera::Camera()
     position(glm::vec3(0.0f,0.0f, 5.0f)), front(glm::vec3(0.0f, 0.0f, -1.0f)), up(glm::vec3(0.0f, 1.0f, 0.0f)), 
     view(glm::lookAt(position, position + front, up)),
     projection(glm::perspective(viewFrustum.fieldOfView, viewFrustum.aspectRatio, viewFrustum.zNear, viewFrustum.zFar)), 
-    m_MoveSpeed(1.0f), m_LookSpeed (0.25f)
+    m_MoveSpeed(2.0f), m_LookSpeed (0.25f)
 {
     right = glm::normalize(glm::cross(front, up));
 }
@@ -14,7 +14,7 @@ Camera::Camera()
 Camera::Camera(const std::string& name, Window* window, const ViewFrustum& frustum, const glm::vec3& pos, const glm::vec3& front, const glm::vec3& up)
     : name(name), position(pos), front(glm::normalize(front)), up(glm::normalize(up)), viewFrustum(frustum), 
     view(glm::lookAt(pos, glm::normalize(pos + front), up)),
-    projection(glm::perspective(frustum.fieldOfView, frustum.aspectRatio, frustum.zNear, frustum.zFar)), m_MoveSpeed(1.0f),m_LookSpeed (0.25f), m_WindowHandle(window)
+    projection(glm::perspective(frustum.fieldOfView, frustum.aspectRatio, frustum.zNear, frustum.zFar)), m_MoveSpeed(2.0f),m_LookSpeed (0.25f), m_WindowHandle(window)
 {
     right = glm::cross(front, up);
 
@@ -76,6 +76,7 @@ void Camera::onKeyPressed(KeyEvent& event)
     switch (event.m_Key)
     {
         case GLFW_KEY_SPACE : bMoveUp = true; break;
+        case GLFW_KEY_LEFT_SHIFT : m_MoveSpeed *= 2.0f; break;
 
         case GLFW_KEY_UP:    bMoveFront    = true; break;
         case GLFW_KEY_W:     bMoveFront    = true; break;
@@ -96,6 +97,7 @@ void Camera::onKeyReleased(KeyEvent& event)
     switch (event.m_Key)
     {
         case GLFW_KEY_SPACE: bMoveUp = false; break;
+        case GLFW_KEY_LEFT_SHIFT : m_MoveSpeed = 2.0f; break;
 
         case GLFW_KEY_UP:    bMoveFront = false; break;
         case GLFW_KEY_W:     bMoveFront = false; break;

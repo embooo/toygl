@@ -34,7 +34,7 @@ public:
     virtual void notify(Event& event) override;
 
     // Helper function
-    void setCursorVisibility(bool hidden = false);
+    void setCursorVisibility(bool visible = false);
 
     // Getters & setters
     int height();

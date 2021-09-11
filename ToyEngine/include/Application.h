@@ -7,6 +7,7 @@
 #include "IObserver.h"
 
 // TODO : remove
+#include "gltfModel.h"
 #include "Mesh.h"
 #include "Shader.h"
 #include "Camera.h"
@@ -27,9 +28,7 @@ public:
     static void printSystemInfo();
 
 private:
-
-    // TODO : remove
-    Mesh m_Cube;
+    glTFImporter::Model model;
     Camera m_Camera;
     Shader m_Shader;
 

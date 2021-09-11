@@ -5,9 +5,10 @@
 Application::Application()
 {
     // Create a window with a rendering context attached
-    m_Window = std::make_unique<Window>("ToyGL", 1280, 720, 3, 3);
+    m_Window = std::make_unique<Window>("ToyGL", 1280, 720, 4, 3);
     // Create an object that will issue the render commands
     m_glRenderer = std::make_unique<OpenGLRenderer>();
+    m_glRenderer->init();
 
     // Info log
     printSystemInfo();
@@ -26,7 +27,7 @@ Application::Application()
     m_Shader.setMat4("projection", m_Camera.getProjectionMat());
 
     // glTF
-    model.loadFromFile("./data/models/Sponza/Sponza.gltf");
+    model.loadFromFile("./data/models/adamHead/adamHead.gltf");
 
     m_lastFrameTime = (float)glfwGetTime();
 }
@@ -44,13 +45,19 @@ void Application::run()
 
 void Application::render()
 {
-    m_glRenderer->init();
     m_glRenderer->clear();
 
     m_Shader.use();
-    m_Shader.setMat4("model", glm::identity<glm::mat4>() * glm::translate(glm::vec3(0,0,0)) * glm::scale(glm::vec3(0.01,0.01,0.01)));
+    
+    m_Shader.setMat4("model", glm::identity<glm::mat4>());
     m_Shader.setMat4("view", m_Camera.getViewMat());
     m_Shader.setMat4("projection", m_Camera.getProjectionMat());
+
+    model.m_EBO.bind();
+    model.m_VAO.bind();
+    model.m_VBO.bind();
+
+    model.draw(m_Shader);
 
     m_Window->swapBuffers();
 }

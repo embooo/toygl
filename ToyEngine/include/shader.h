@@ -22,6 +22,7 @@ public:
 
     void use() const;
     int build(const std::string& vertexPath, const std::string& fragmentPath);
+    int rebuild();
     void release();
 
     void setInt(const std::string& name, int value);
@@ -34,6 +35,8 @@ public:
 
 private:
     GLuint m_Program;
+    std::string m_vertexPath;
+    std::string m_fragmentPath;
     static std::string readFile(const std::string& path);
     static std::string glShaderTypeToString(GLenum shaderType);
     static GLint checkShaderCompileSuccess(GLenum shaderType, GLuint shader);

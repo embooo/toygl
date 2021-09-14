@@ -196,6 +196,8 @@ int Shader::build(const std::string& vertexPath, const std::string& fragmentPath
     // Has to be called after initializing an OpenGL context
     // This function compiles the shader source codes
     // specified and links them to create a complete shader program
+    m_vertexPath = vertexPath;
+    m_fragmentPath = fragmentPath;
 
     const std::string& vertexShaderFile   = readFile(vertexPath);
     const std::string& fragmentShaderFile = readFile(fragmentPath);
@@ -255,3 +257,13 @@ int Shader::build(const std::string& vertexPath, const std::string& fragmentPath
     return -1;
 }
 
+int Shader::rebuild()
+{
+    if (m_vertexPath.empty() || m_fragmentPath.empty())
+    {
+        build(m_vertexPath, m_fragmentPath);
+        return 0;
+    }
+
+    else { std::cerr << "Could not rebuild shader. \n";  return -1; }
+}

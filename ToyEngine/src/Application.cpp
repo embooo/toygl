@@ -27,7 +27,7 @@ Application::Application()
     m_Shader.setMat4("projection", m_Camera.getProjectionMat());
 
     // glTF
-    model.loadFromFile("./data/models/adamHead/adamHead.gltf");
+    model.loadFromFile("./data/models/Sponza/Sponza.gltf");
 
     m_lastFrameTime = (float)glfwGetTime();
 }
@@ -53,10 +53,6 @@ void Application::render()
     m_Shader.setMat4("view", m_Camera.getViewMat());
     m_Shader.setMat4("projection", m_Camera.getProjectionMat());
 
-    model.m_EBO.bind();
-    model.m_VAO.bind();
-    model.m_VBO.bind();
-
     model.draw(m_Shader);
 
     m_Window->swapBuffers();
@@ -75,6 +71,20 @@ void Application::onUpdate(Event& event)
         case EventType::WindowResize:
             onWindowResize(static_cast<WindowResizeEvent&>(event)); 
             break;
+
+        case EventType::KeyPressed:
+            onKeyPressed(static_cast<KeyEvent&>(event));
+            break;
+    }
+}
+
+void Application::onKeyPressed(KeyEvent& event)
+{
+    switch (event.m_Key)
+    {
+        case GLFW_KEY_R:
+            m_Shader.rebuild();
+        break;
     }
 }
 

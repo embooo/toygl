@@ -22,6 +22,7 @@ public:
     void render();
     virtual void update(float deltaTime);
     virtual void onUpdate(Event& event) override;
+    virtual void onKeyPressed(KeyEvent& event);
     inline float getDeltaTime();
     virtual void onWindowResize(WindowResizeEvent& event);
 

@@ -12,3 +12,6 @@ obj
 **/bin/Debug*
 ToyEngine/*.vcxproj.*
 .sln
+*.vcxproj
+*.filters
+ToyEngine/thirdparty/GLFW/GLFW.vcxproj.user

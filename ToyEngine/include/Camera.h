@@ -66,6 +66,8 @@ public:
     virtual void onUpdate(Event& event) override;
     void update(const float dt = 0.1f) ;
     
+
+    glm::vec3& pos() { return position; }
     
 
     // Mouse/Keyboard events handler

@@ -3,6 +3,8 @@
 #include <iostream>
 
 #include "glm/glm.hpp"
+#include <glm/gtx/quaternion.hpp>
+
 #include "Mesh.h"
 #include "OpenGLBuffers.h"
 #include "Shader.h"
@@ -23,13 +25,14 @@ namespace glTFImporter
         // Each node may refer to a mesh or a camera
 
         // Local transform with a column-major matrix
-        glm::mat4 matrix;
+        glm::mat4 matrix = glm::identity<glm::mat4>();
 
         // Local transform with separate matrices for T, R, S
-        glm::vec3 translation;
-        glm::vec3 rotation;
-        glm::vec3 scale{ 1.0 };
+        glm::vec3 translation = glm::vec3(0.0, 0.0, 0.0);
+        glm::quat rotation    = glm::quat(1.0, 0.0, 0.0, 0.0);
+        glm::vec3 scale       = glm::vec3(1.0, 1.0, 1.0);
 
+        glm::mat4 getLocalTransform();
         glm::mat4 getGlobalTransform();
 
         std::string name;
@@ -46,6 +49,7 @@ namespace glTFImporter
 
     struct Mesh
     {
+        std::string name;
         std::vector<Primitive*> primitives;
     };
 
@@ -108,6 +112,8 @@ namespace glTFImporter
         Camera(double ar, double yfov, double zfar, double znear)
             : aspectRatio(ar), yFov(yfov), zFar(zfar), zNear(znear)
         {}
+
+        std::string name;
         double aspectRatio;
         double yFov;
         double zFar;
@@ -143,6 +149,7 @@ namespace glTFImporter
 
         GLenum indicesType;
         //size_t numIndices;
+        size_t totalNumVertices = 0;
 
         VertexArray m_VAO;
         ElementBuffer m_EBO;

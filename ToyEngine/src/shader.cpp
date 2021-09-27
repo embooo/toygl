@@ -259,7 +259,7 @@ int Shader::build(const std::string& vertexPath, const std::string& fragmentPath
 
 int Shader::rebuild()
 {
-    if (m_vertexPath.empty() || m_fragmentPath.empty())
+    if (!m_vertexPath.empty() && !m_fragmentPath.empty())
     {
         build(m_vertexPath, m_fragmentPath);
         return 0;

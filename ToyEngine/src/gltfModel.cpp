@@ -268,14 +268,14 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
                 if(normalBuffer)    vertex.normal     = glm::make_vec3(&normalBuffer[i * 3]);
                 if(texcoord0Buffer) vertex.texcoord_0 = glm::make_vec2(&texcoord0Buffer[i * 2]);
                 if(texcoord1Buffer) vertex.texcoord_1 = glm::make_vec2(&texcoord1Buffer[i * 2]);
-                
+
                 // ... other attributes
 
                 vertices.push_back(vertex);
             }
 
             ////////////////////////////////////////////////////////////////////////////////// Extract Indices
-            if(p.indices > -1) 
+            if(p.indices != -1) 
             {
                 const tinygltf::Accessor& accessor     = model.accessors.at(p.indices);
                 const tinygltf::BufferView& bufferView = model.bufferViews.at(accessor.bufferView);
@@ -377,10 +377,10 @@ void glTFImporter::Model::loadMaterials(tinygltf::Model& model)
             glTFImporter::Material internalMat;
 
             // Base color
-            internalMat.baseColorTexture        = &textures[pbr.baseColorTexture.index];
-            internalMat.baseColorTexture->index = pbr.baseColorTexture.index;
-            internalMat.baseColorFactor         = glm::make_vec4(pbr.baseColorFactor.data());
-            
+            internalMat.baseColorTexture              = &textures[pbr.baseColorTexture.index];
+            internalMat.baseColorTexture->index       = pbr.baseColorTexture.index;
+            internalMat.baseColorFactor               = glm::make_vec4(pbr.baseColorFactor.data());
+            internalMat.baseColorTexture->texCoordSet = pbr.baseColorTexture.texCoord;
 
             materials.push_back(internalMat);
         }
@@ -436,7 +436,7 @@ void glTFImporter::Model::loadTextures(tinygltf::Model& model)
 
         newTexture.name     = tex.name;
         newTexture.image    = &images[tex.source];
-
+        
         if (tex.sampler != -1)
         {
             newTexture.sampler = &samplers[tex.sampler];

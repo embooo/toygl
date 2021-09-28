@@ -42,11 +42,11 @@ void glTFImporter::Model::drawMeshPrimitives(Node* node, Shader& shader)
 
     for (const Primitive* p : node->mesh->primitives)
     {
+        shader.setInt("baseColorTexture", p->materialID);
+
         glDrawElements(p->mode, p->numIndices, GL_UNSIGNED_INT, (void*)(p->startIndices * sizeof(GL_UNSIGNED_INT)));
-        //glDrawArrays(GL_TRIANGLES, p->startVertices, p->numVertices);
     }
 }
-
 
 void glTFImporter::Model::loadFromFile(const std::string& filename)
 {
@@ -82,8 +82,16 @@ void glTFImporter::Model::loadFromFile(const std::string& filename)
                traverseNode(tinyglTFModel, vertices, indices, nodeId, nullptr, node);
             }
         }
-    
+
+        loadImages(tinyglTFModel);
+        loadSamplers(tinyglTFModel);
+        loadTextures(tinyglTFModel);
+        loadMaterials(tinyglTFModel);
+
+        createTextureBuffers(texture);
         /////// 2. Setup OpenGL buffers
+
+
 
         // Create Vertex array object
         // Storing layout, format of vertex data and buffer objects
@@ -153,6 +161,8 @@ void glTFImporter::Model::traverseNode(tinygltf::Model& model, std::vector<Verte
 /// <param name="model"></param>
 /// <param name="parent"></param>
 /// <param name="node"></param>
+
+
 void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, glTFImporter::Node* parent, const tinygltf::Node& node, glTFImporter::Node* internalNode)  // processNode
 {
     internalNode->name = node.mesh;
@@ -178,7 +188,7 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
     }
 
     // Check if node refers to a mesh or a camera
-    if (node.mesh > -1)
+    if (node.mesh != -1)
     {
         internalNode->mesh = new Mesh();
         const tinygltf::Mesh& glTFMesh = model.meshes.at(node.mesh);
@@ -247,39 +257,6 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
             }
 
 
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Extract Mesh material
-            /// 2. Extract material corresponding to this primitive
-            const tinygltf::Material& material        = model.materials[p.material];
-            const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
-
-            
-            primitive->material = new glTFImporter::Material();
-            glTFImporter::Material& internalMat = *primitive->material;
-
-            internalMat.name = material.name;
-
-            // pbrMetallicRoughness 
-            if (pbr.baseColorTexture.index != -1)
-            {
-                const tinygltf::Texture   baseColorTex = model.textures[pbr.baseColorTexture.index];
-                const tinygltf::Image     baseColorIm  = model.images[baseColorTex.source];
-
-                internalMat.baseColorTexture = new Texture();
-                internalMat.baseColorFactor = glm::make_vec4(pbr.baseColorFactor.data());
-                internalMat.baseColorTexture->name = baseColorTex.name;
-
-                /// Image layout
-                internalMat.baseColorTexture->image.height        = baseColorIm.height;
-                internalMat.baseColorTexture->image.width         = baseColorIm.width;
-                internalMat.baseColorTexture->image.bitDepth      = baseColorIm.bits;
-                internalMat.baseColorTexture->image.numComponents = baseColorIm.component;
-                internalMat.baseColorTexture->image.pixel_type    = baseColorIm.pixel_type;
-
-                //internalMat.baseColorTexture->image.imData        = baseColorIm.image;
-
-                // Sampler
-            }
-
             ////////////////////////////////////////////////////////////////////////////////// 
             /// 
             for(size_t i = 0; i < primitive->numVertices; ++i)
@@ -288,7 +265,7 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
                 
                 vertex.position   = glm::make_vec3(&positionBuffer [i * 3]);
 
-                if(normalBuffer)    vertex.normal = glm::make_vec3(&normalBuffer[i * 3]);
+                if(normalBuffer)    vertex.normal     = glm::make_vec3(&normalBuffer[i * 3]);
                 if(texcoord0Buffer) vertex.texcoord_0 = glm::make_vec2(&texcoord0Buffer[i * 2]);
                 if(texcoord1Buffer) vertex.texcoord_1 = glm::make_vec2(&texcoord1Buffer[i * 2]);
                 
@@ -350,25 +327,29 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
                 }
             }
 
+            ////////////////////////////////////////////////////////////////////////////////// Extract material ID
+            if (p.material != -1)
+            {
+                primitive->materialID = p.material;
+            }
+
             internalNode->mesh->primitives.push_back(primitive);
         }
-        
-
-
-
 
     }
-    else if (node.camera > -1)
+    else if (node.camera != -1)
     {
         const tinygltf::Camera& camera = model.cameras.at(node.camera);
 
-        internalNode->camera->name   = camera.name;                                
         internalNode->camera = new Camera(
             camera.perspective.aspectRatio, 
             camera.perspective.yfov, 
             camera.perspective.zfar, 
             camera.perspective.znear
         );
+
+        internalNode->camera->name = camera.name;
+
     }
 
 
@@ -384,11 +365,119 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
     }
 }
 
+
+void glTFImporter::Model::loadMaterials(tinygltf::Model& model)
+{
+    for (const tinygltf::Material& mat : model.materials)
+    {
+        const tinygltf::PbrMetallicRoughness& pbr = mat.pbrMetallicRoughness;
+
+        if (pbr.baseColorTexture.index != -1)
+        {
+            glTFImporter::Material internalMat;
+
+            // Base color
+            internalMat.baseColorTexture        = &textures[pbr.baseColorTexture.index];
+            internalMat.baseColorTexture->index = pbr.baseColorTexture.index;
+            internalMat.baseColorFactor         = glm::make_vec4(pbr.baseColorFactor.data());
+            
+
+            materials.push_back(internalMat);
+        }
+    }
+
+    std::cerr << "Loaded: " << materials.size() << " materials." << std::endl;
+
+}
+
+void glTFImporter::Model::createTextureBuffers(GLuint &texture)
+{
+    std::vector<GLuint> texIds;
+    texIds.resize(materials.size());
+
+    GLuint sampler;
+    glGenSamplers(1, &sampler);
+
+    glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+    for (int i = 0; i < materials.size(); ++i)
+    {
+        // Load base color texture
+        GLuint& id = texIds[i];
+        const glTFImporter::Material mat = materials[i];
+        glGenTextures(1, &id);
+
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, id);
+        glBindSampler(GL_TEXTURE0 + i, sampler);
+
+        glTexImage2D(GL_TEXTURE_2D,
+            /* level */ 0,
+            /* texel format */ GL_RGBA,
+            /* width, height, border */ mat.baseColorTexture->image->width, mat.baseColorTexture->image->height, 0,
+            /* data format */ GL_RGBA, /* data type */ mat.baseColorTexture->image->pixel_type,
+            /* data */ mat.baseColorTexture->image->imData.data());
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    }
+    
+}
+
+
+void glTFImporter::Model::loadTextures(tinygltf::Model& model)
+{
+    for (const tinygltf::Texture& tex : model.textures)
+    {
+        Texture newTexture;
+        assert(("Invalid texture index"), tex.source != -1);
+
+        newTexture.name     = tex.name;
+        newTexture.image    = &images[tex.source];
+
+        if (tex.sampler != -1)
+        {
+            newTexture.sampler = &samplers[tex.sampler];
+        }
+
+        textures.push_back(newTexture);
+    }
+
+    std::cerr << "Loaded: " << textures.size() << " textures." << std::endl;
+
+}
+
+void glTFImporter::Model::loadImages(tinygltf::Model& model)
+{
+    for (const tinygltf::Image& im : model.images)
+    {
+        images.push_back( glTFImporter::Image(im.uri, im.width, im.height, im.bits, im.component, im.pixel_type, im.image) );
+    }
+
+    std::cerr << "Loaded: " << images.size() << " images." << std::endl;
+
+}
+
+
+void glTFImporter::Model::loadSamplers(tinygltf::Model& model)
+{
+    for (const tinygltf::Sampler& smp : model.samplers)
+    {
+        samplers.push_back(Sampler(smp.minFilter, smp.magFilter, smp.wrapS, smp.wrapT));
+    }
+
+    std::cerr << "Loaded: " << samplers.size() << " samplers." << std::endl;
+}
+
+
+
+
 glm::mat4 glTFImporter::Node::getLocalTransform()
 {
     //return ( glm::translate(glm::mat4(1.0), translation) * glm::toMat4(rotation) * glm::scale(glm::mat4(1.0), scale) ) * matrix;.
     return (glm::translate(glm::mat4(1.0), translation) * glm::scale(glm::mat4(1.0), scale)) * matrix;
-
 }
 
 /// <summary>

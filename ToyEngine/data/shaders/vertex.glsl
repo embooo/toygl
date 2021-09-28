@@ -11,7 +11,8 @@ uniform mat4 projection;
 
 out vec3 vNormal; // vertex normal 
 out mat4 viewMat;
-out vec2 vTexcoord;
+out vec2 vTexcoord0;
+out vec2 vTexcoord1;
 
 out vec3 p; // position du point de la surface dans le repère monde
 
@@ -20,6 +21,7 @@ void main( )
     mat4 mvp = projection * view * model;
     viewMat = view;
     vNormal = normal;
-    
+    vTexcoord0 = texcoord0;
+    vTexcoord1 = texcoord1;
     gl_Position =  mvp * vec4(position, 1.0);
 }

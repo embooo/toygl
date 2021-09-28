@@ -58,6 +58,7 @@ namespace glTFImporter
         // Rendering mode
         // Whether it should rendered as POINTS, LINES or TRIANGLES
         uint32_t mode;
+        int materialID;
 
         // Needed to access parts of the element/vertex buffers
         uint32_t startIndices;
@@ -73,27 +74,41 @@ namespace glTFImporter
     struct Material
     {
         std::string name;
-        uint32_t index;
+        int id;
+
         // Metallic-Roughness-Model (default model)
         Texture* baseColorTexture;
         glm::vec4 baseColorFactor;
 
-        std::unique_ptr<Texture> metallicRoughnessTexture;
-        float metallicFactor{ 1.0 };
-        float roughnessFactor{ 1.0 };
+        // Metallic
+        Texture* metallicRoughnessTexture;
+        float metallicFactor  = 1.0;
 
+        float roughnessFactor = 1.0;
+        // Normal
         Texture* normalTexture;
+
+        // Ambiant occlusion
         Texture* occlusionTexture;
+
+        // Emissive 
         Texture* emissiveTexture;
         glm::vec3 emissiveFactor;
+
     };
 
     struct Image
     {
+        Image(const std::string& name, int width, int height, int bits, int channels, int pixelType, const std::vector<unsigned char>& data)
+            : width(width), height(height), bitDepth(bits), channels(channels), pixel_type(pixelType), imData(data)
+        {
+        }
+
+        std::string name;
         int width;
         int height;
-        int numComponents; // number of channels per pixel
         int bitDepth; // bit depth per component
+        int channels; // number of channels per pixel
         int pixel_type; // usually UBYTE(bitDepth = 8) or USHORT(bitDepth = 16)
 
         std::vector<unsigned char> imData;
@@ -101,14 +116,26 @@ namespace glTFImporter
 
     struct Sampler
     {
+        int id;
+        int minFilter;
+        int magFilter;
+        int wrapS;
+        int wrapT;
 
+        Sampler(int minFilter, int magFilter, int wrapS, int wrapT)
+            : minFilter(minFilter), magFilter(magFilter), wrapS(wrapS), wrapT(wrapT)
+        {
+
+        }
     };
 
     struct Texture
     {
         std::string name;
-        Image image;
-        Sampler sampler;
+        int index;
+        Image*   image;
+        Sampler* sampler;
+        GLuint texCoordSet;
     };
 
     struct Scene
@@ -167,14 +194,24 @@ namespace glTFImporter
         VertexBuffer m_VBO;
 
         std::vector<glTFImporter::Node*> nodes;
-
+        void loadMaterials(tinygltf::Model& model);
+        void loadTextures(tinygltf::Model& model);
+        void loadImages(tinygltf::Model& model);
+        void loadSamplers(tinygltf::Model& model);
         void drawRecursively(Node* node, Shader& shader);
         void draw(Shader& shader);
         void drawMeshPrimitives(Node* node, Shader& shader);
 
         tinygltf::Model tinyglTFModel;
 
+        std::vector<Texture> textures;
+        std::vector<Material> materials;
+        std::vector<Image> images;
+        std::vector<Sampler> samplers;
+
+        GLuint texture;
         void loadFromFile(const std::string& filename);
+        void createTextureBuffers(GLuint& texture);
         void traverseNode(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, int parentIndex, glTFImporter::Node* parent, const tinygltf::Node& glTFDataNode);
         void processElements(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, glTFImporter::Node* parent, const tinygltf::Node& node, glTFImporter::Node* internalNode);
     };

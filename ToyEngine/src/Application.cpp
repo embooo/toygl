@@ -53,9 +53,7 @@ void Application::render()
     m_Shader.setMat4("view", m_Camera.getViewMat());
     m_Shader.setMat4("projection", m_Camera.getProjectionMat());
 
-    m_Shader.setFloat4("cLight", glm::vec4(0.9, 0.9, 0.9, 1.0));
-    m_Shader.setFloat3("pLight", glm::vec3(0.0, 0.0, 0.0));
-    m_Shader.setFloat3("pCam", m_Camera.pos());
+    m_Shader.setFloat3("cameraPos", m_Camera.pos());
 
     model.draw(m_Shader);
 

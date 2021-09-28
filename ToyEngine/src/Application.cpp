@@ -15,7 +15,7 @@ Application::Application()
 
     // Mesh test
     m_Camera = Camera("DefaultCam", m_Window.get(), ViewFrustum(45.0f, (float)m_Window->width(), (float)m_Window->height(), 0.1f, 100.0f), glm::vec3(0.0f, 0.0f, 5.0f));
-    m_Shader = Shader("./data/shaders/vertex.glsl", "./data/shaders/fragment.glsl");
+    m_Shader.build("./data/shaders/vertex.glsl", "./data/shaders/fragmentEnv.glsl");
 
     // Register to observer list to get updated when events occur
     m_Window->attach(this);
@@ -27,7 +27,7 @@ Application::Application()
     m_Shader.setMat4("projection", m_Camera.getProjectionMat());
 
     // glTF
-    model.loadFromFile("./data/models/Sponza/Sponza.gltf");
+    model.loadFromFile("./data/models/bistro/bistro.glb");
 
     m_lastFrameTime = (float)glfwGetTime();
 }
@@ -52,6 +52,10 @@ void Application::render()
     m_Shader.setMat4("model", glm::identity<glm::mat4>());
     m_Shader.setMat4("view", m_Camera.getViewMat());
     m_Shader.setMat4("projection", m_Camera.getProjectionMat());
+
+    m_Shader.setFloat4("cLight", glm::vec4(0.9, 0.9, 0.9, 1.0));
+    m_Shader.setFloat3("pLight", glm::vec3(0.0, 0.0, 0.0));
+    m_Shader.setFloat3("pCam", m_Camera.pos());
 
     model.draw(m_Shader);
 

@@ -4,9 +4,6 @@
     <Filter Include="include">
       <UniqueIdentifier>{89AF369E-F58E-B539-FEA6-40106A051C9B}</UniqueIdentifier>
     </Filter>
-    <Filter Include="include\ObserverInterface">
-      <UniqueIdentifier>{D1E061F1-3DA3-957B-8653-2408F2546E59}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src">
       <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
     </Filter>
@@ -21,31 +18,39 @@
     <ClInclude Include="include\Event.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\IObserver.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ISubject.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\KeyboardEvent.h">
+      <Filter>include</Filter>
+    </ClInclude>
     <ClInclude Include="include\Mesh.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\MouseEvent.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\ObserverInterface\Observer.h">
-      <Filter>include\ObserverInterface</Filter>
-    </ClInclude>
-    <ClInclude Include="include\ObserverInterface\Subject.h">
-      <Filter>include\ObserverInterface</Filter>
-    </ClInclude>
-    <ClInclude Include="include\OpenGLRenderer.h">
+    <ClInclude Include="include\OpenGLBuffers.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\Shader.h">
+    <ClInclude Include="include\OpenGLRenderer.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\Window.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\IObserver.h" />
-    <ClInclude Include="include\ISubject.h" />
-    <ClInclude Include="include\WindowEvent.h" />
-    <ClInclude Include="include\KeyboardEvent.h" />
+    <ClInclude Include="include\WindowEvent.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gltfModel.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\shader.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp">
@@ -54,21 +59,32 @@
     <ClCompile Include="src\Camera.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Event.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="src\Mesh.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\OpenGLBuffers.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\OpenGLRenderer.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Shader.cpp">
+    <ClCompile Include="src\Window.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Window.cpp">
+    <ClCompile Include="src\gltfModel.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Event.cpp" />
+    <ClCompile Include="src\shader.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.clang-tidy" />
   </ItemGroup>
 </Project>

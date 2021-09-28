@@ -9,7 +9,10 @@
 
 void glTFImporter::Model::draw(Shader& shader)
 {
+    m_VBO.bind();
     m_VAO.bind();
+
+    //glDrawArrays(GL_LINE, 0, totalNumVertices);
 
     for(Node* node : nodes)
     {
@@ -35,7 +38,7 @@ void glTFImporter::Model::drawRecursively(Node* node, Shader& shader)
 
 void glTFImporter::Model::drawMeshPrimitives(Node* node, Shader& shader)
 {
-    //shader.setMat4("model", glm::translate(glm::identity<glm::mat4>(), node->translation) * glm::scale(glm::identity<glm::mat4>(), node->scale));
+    shader.setMat4("model", node->getGlobalTransform());
 
     for (const Primitive* p : node->mesh->primitives)
     {
@@ -152,6 +155,7 @@ void glTFImporter::Model::traverseNode(tinygltf::Model& model, std::vector<Verte
 /// <param name="node"></param>
 void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, glTFImporter::Node* parent, const tinygltf::Node& node, glTFImporter::Node* internalNode)  // processNode
 {
+    internalNode->name = node.mesh;
     // Extract local transform
     if (node.matrix.size() == 16)
     {
@@ -165,7 +169,7 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
 
     if (node.rotation.size() == 4) 
     {
-        internalNode->rotation = glm::make_vec3(node.rotation.data());
+        internalNode->rotation = glm::make_quat(node.rotation.data());
     }
 
     if (node.scale.size() == 3) 
@@ -178,18 +182,19 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
     {
         internalNode->mesh = new Mesh();
         const tinygltf::Mesh& glTFMesh = model.meshes.at(node.mesh);
-        internalNode->name = glTFMesh.name;
+        internalNode->mesh->name = glTFMesh.name;
 
+        
         for(const tinygltf::Primitive& p : glTFMesh.primitives)
         {
             Primitive* primitive = new Primitive{};
 
             primitive->startVertices = vertices.size(); 
-            primitive->startIndices = indices.size();
+            primitive->startIndices  = indices.size();
 
             if(p.mode > -1) primitive->mode = p.mode;
 
-            ////////////////////////////////////////////////////////////////////////////////// Extract Vertex Attributes 
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Extract Vertex Attributes 
             /// 1. Extract the buffers and informations regarding layout
 
             const float* positionBuffer  = nullptr;
@@ -207,8 +212,9 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
                 const tinygltf::Buffer& buffer          = model.buffers.at(bufferView.buffer);
 
                 primitive->numVertices = accessor.count;
-
-                positionBuffer     = reinterpret_cast<const float*>(&(buffer.data[bufferView.byteOffset + accessor.byteOffset]));
+                totalNumVertices += accessor.count;
+                positionBuffer = reinterpret_cast<const float*>(&(buffer.data[bufferView.byteOffset + accessor.byteOffset]));
+                
             }
 
             //assert(positionBuffer != nullptr, ("error : model doesn't contain vertex positions."));
@@ -224,31 +230,68 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
 
             if(p.attributes.find("TEXCOORD_0") != p.attributes.end())
             {
+
                 const tinygltf::Accessor& accessor     = model.accessors.at(p.attributes.at("TEXCOORD_0"));
                 const tinygltf::BufferView& bufferView = model.bufferViews.at(accessor.bufferView);
                 const tinygltf::Buffer& buffer         = model.buffers.at(bufferView.buffer);
-
                 texcoord0Buffer = reinterpret_cast<const float*>(&(buffer.data[bufferView.byteOffset + accessor.byteOffset]));
             }
 
             if(p.attributes.find("TEXCOORD_1") != p.attributes.end())
             {
-                const tinygltf::Accessor& accessor     = model.accessors.at(p.attributes.at("TEXCOORD_0"));
+                const tinygltf::Accessor& accessor     = model.accessors.at(p.attributes.at("TEXCOORD_1"));
                 const tinygltf::BufferView& bufferView = model.bufferViews.at(accessor.bufferView);
                 const tinygltf::Buffer& buffer         = model.buffers.at(bufferView.buffer);
 
                 texcoord1Buffer = reinterpret_cast<const float*>(&(buffer.data[bufferView.byteOffset + accessor.byteOffset]));
             }
 
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Extract Mesh material
+            /// 2. Extract material corresponding to this primitive
+            const tinygltf::Material& material        = model.materials[p.material];
+            const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
+
+            
+            primitive->material = new glTFImporter::Material();
+            glTFImporter::Material& internalMat = *primitive->material;
+
+            internalMat.name = material.name;
+
+            // pbrMetallicRoughness 
+            if (pbr.baseColorTexture.index != -1)
+            {
+                const tinygltf::Texture   baseColorTex = model.textures[pbr.baseColorTexture.index];
+                const tinygltf::Image     baseColorIm  = model.images[baseColorTex.source];
+
+                internalMat.baseColorTexture = new Texture();
+                internalMat.baseColorFactor = glm::make_vec4(pbr.baseColorFactor.data());
+                internalMat.baseColorTexture->name = baseColorTex.name;
+
+                /// Image layout
+                internalMat.baseColorTexture->image.height        = baseColorIm.height;
+                internalMat.baseColorTexture->image.width         = baseColorIm.width;
+                internalMat.baseColorTexture->image.bitDepth      = baseColorIm.bits;
+                internalMat.baseColorTexture->image.numComponents = baseColorIm.component;
+                internalMat.baseColorTexture->image.pixel_type    = baseColorIm.pixel_type;
+
+                //internalMat.baseColorTexture->image.imData        = baseColorIm.image;
+
+                // Sampler
+            }
+
             ////////////////////////////////////////////////////////////////////////////////// 
-            /// 2. 
+            /// 
             for(size_t i = 0; i < primitive->numVertices; ++i)
             {
                 Vertex vertex;
+                
+                vertex.position   = glm::make_vec3(&positionBuffer [i * 3]);
 
-                vertex.position     = glm::make_vec3(&positionBuffer  [i * 3]);
-                vertex.normal       = glm::make_vec3(&normalBuffer    [i * 3]);
-                //vertex.texcoord_0   = glm::make_vec3(&texcoord0Buffer [i * 2]);
+                if(normalBuffer)    vertex.normal = glm::make_vec3(&normalBuffer[i * 3]);
+                if(texcoord0Buffer) vertex.texcoord_0 = glm::make_vec2(&texcoord0Buffer[i * 2]);
+                if(texcoord1Buffer) vertex.texcoord_1 = glm::make_vec2(&texcoord1Buffer[i * 2]);
+                
                 // ... other attributes
 
                 vertices.push_back(vertex);
@@ -309,12 +352,17 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
 
             internalNode->mesh->primitives.push_back(primitive);
         }
+        
+
+
+
+
     }
     else if (node.camera > -1)
     {
         const tinygltf::Camera& camera = model.cameras.at(node.camera);
 
-        internalNode->name   = camera.name;                                
+        internalNode->camera->name   = camera.name;                                
         internalNode->camera = new Camera(
             camera.perspective.aspectRatio, 
             camera.perspective.yfov, 
@@ -322,6 +370,7 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
             camera.perspective.znear
         );
     }
+
 
     // Node hierarchy
     if (parent)
@@ -334,6 +383,14 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
         nodes.push_back(internalNode);
     }
 }
+
+glm::mat4 glTFImporter::Node::getLocalTransform()
+{
+    //return ( glm::translate(glm::mat4(1.0), translation) * glm::toMat4(rotation) * glm::scale(glm::mat4(1.0), scale) ) * matrix;.
+    return (glm::translate(glm::mat4(1.0), translation) * glm::scale(glm::mat4(1.0), scale)) * matrix;
+
+}
+
 /// <summary>
 /// 
 /// </summary>
@@ -341,13 +398,12 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
 glm::mat4 glTFImporter::Node::getGlobalTransform()
 {
     // The global transform of a node is given by the product of all local transforms on the path from the root to the respective node. (glTF 2.0 Quick Reference Guide)
-    glm::mat4 globalTransform = matrix;
-
-    Node* p = parent;
-    while(p)
+    glm::mat4 globalTransform = getLocalTransform();
+    
+    while(parent)
     {
-        globalTransform = globalTransform * p->matrix;
-        p = p->parent;
+        globalTransform = globalTransform * parent->matrix;
+        parent = parent->parent;
     }
 
     return globalTransform;

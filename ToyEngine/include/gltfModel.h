@@ -67,8 +67,7 @@ namespace glTFImporter
         uint32_t numIndices;
         uint32_t numVertices;
 
-        // Material that should be used 
-        uint32_t materialId;
+        Material* material;
     };
 
     struct Material
@@ -76,7 +75,7 @@ namespace glTFImporter
         std::string name;
         uint32_t index;
         // Metallic-Roughness-Model (default model)
-        std::unique_ptr<Texture> baseColorTexture;
+        Texture* baseColorTexture;
         glm::vec4 baseColorFactor;
 
         std::unique_ptr<Texture> metallicRoughnessTexture;
@@ -89,15 +88,27 @@ namespace glTFImporter
         glm::vec3 emissiveFactor;
     };
 
+    struct Image
+    {
+        int width;
+        int height;
+        int numComponents; // number of channels per pixel
+        int bitDepth; // bit depth per component
+        int pixel_type; // usually UBYTE(bitDepth = 8) or USHORT(bitDepth = 16)
+
+        std::vector<unsigned char> imData;
+    };
+
+    struct Sampler
+    {
+
+    };
 
     struct Texture
     {
-        double scale;
-        uint32_t texcoord;
-
-        uint32_t width;
-        uint32_t height;
-        uint32_t depth;
+        std::string name;
+        Image image;
+        Sampler sampler;
     };
 
     struct Scene

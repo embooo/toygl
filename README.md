@@ -11,19 +11,21 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 - [x] Keyboard/Mouse events handling
 - [x] GLSL shader loading/hot-reloading 
 - [ ] ImGui 
+
 ###  Model loading
-- [x] Custom glTF 2.0 model loader (with Materials, textures, transforms)
+- [x] Custom glTF 2.0 model loader (loading materials, textures, transforms)
+- [ ] MIP mapping
 
 ### Lighting 
-
 - [x] Lambert BRDF
 - [x] Blinn-Phong BRDF
 - [ ] Microfacet BRDF (Cook-Torrance)
-- [x] Point light
-- [x] Directional light
+- [x] Point lights, directional lights
+- [x] Normal mapping
 - [ ] Shadow mapping 
 
 ### Rendering methods
 - [ ] Forward+ 
+- [ ] Frustum culling
 
 

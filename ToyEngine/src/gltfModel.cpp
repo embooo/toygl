@@ -36,17 +36,6 @@ void glTFImporter::Model::drawRecursively(Node* node, Shader& shader)
     }
 }
 
-void glTFImporter::Model::drawMeshPrimitives(Node* node, Shader& shader)
-{
-    shader.setMat4("model", node->getGlobalTransform());
-
-    for (const Primitive* p : node->mesh->primitives)
-    {
-        shader.setInt("baseColorTexture", p->materialID);
-
-        glDrawElements(p->mode, p->numIndices, GL_UNSIGNED_INT, (void*)(p->startIndices * sizeof(GL_UNSIGNED_INT)));
-    }
-}
 
 void glTFImporter::Model::loadFromFile(const std::string& filename)
 {
@@ -71,6 +60,11 @@ void glTFImporter::Model::loadFromFile(const std::string& filename)
 
         std::vector<Vertex> vertices;
         std::vector<unsigned int> indices;
+
+        loadImages(tinyglTFModel);
+        loadSamplers(tinyglTFModel);
+        loadTextures(tinyglTFModel);
+
         
         /////// 1. Extract model data from nodes 
         for(const tinygltf::Scene& scene : tinyglTFModel.scenes)
@@ -83,15 +77,10 @@ void glTFImporter::Model::loadFromFile(const std::string& filename)
             }
         }
 
-        loadImages(tinyglTFModel);
-        loadSamplers(tinyglTFModel);
-        loadTextures(tinyglTFModel);
-        loadMaterials(tinyglTFModel);
+        std::cerr << "Loaded: " << materials.size() << " materials." << std::endl;
 
-        createTextureBuffers(texture);
         /////// 2. Setup OpenGL buffers
-
-
+        createTextureBuffers();
 
         // Create Vertex array object
         // Storing layout, format of vertex data and buffer objects
@@ -331,7 +320,16 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
             if (p.material != -1)
             {
                 primitive->materialID = p.material;
+
+                if (materials.find(p.material) == materials.end())
+                {
+                    // Add new material
+                    loadMaterials(model.materials[p.material], p.material);
+                }
+
+
             }
+
 
             internalNode->mesh->primitives.push_back(primitive);
         }
@@ -365,32 +363,55 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
     }
 }
 
-
-void glTFImporter::Model::loadMaterials(tinygltf::Model& model)
+void glTFImporter::Model::loadMaterials(tinygltf::Material& material, int materialId)
 {
-    for (const tinygltf::Material& mat : model.materials)
-    {
-        const tinygltf::PbrMetallicRoughness& pbr = mat.pbrMetallicRoughness;
+        glTFImporter::Material internalMat;
+        
+        const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
 
+        // Base color texture
         if (pbr.baseColorTexture.index != -1)
         {
-            glTFImporter::Material internalMat;
-
-            // Base color
+            internalMat.hasBaseColorTexture = true;
             internalMat.baseColorTexture              = &textures[pbr.baseColorTexture.index];
             internalMat.baseColorTexture->index       = pbr.baseColorTexture.index;
             internalMat.baseColorFactor               = glm::make_vec4(pbr.baseColorFactor.data());
             internalMat.baseColorTexture->texCoordSet = pbr.baseColorTexture.texCoord;
-
-            materials.push_back(internalMat);
         }
-    }
 
-    std::cerr << "Loaded: " << materials.size() << " materials." << std::endl;
+        // Normal map
+        if (material.normalTexture.index != -1)
+        {
+            internalMat.hasNormalTexture = true;
+            internalMat.normalTexture              = &textures[material.normalTexture.index];
+            internalMat.normalTexture->index       = material.normalTexture.index;
+            internalMat.normalTexture->texCoordSet = material.normalTexture.texCoord;
+        }
 
+        materials.insert(std::pair<int, Material>(materialId, internalMat)) ;
 }
 
-void glTFImporter::Model::createTextureBuffers(GLuint &texture)
+
+
+void glTFImporter::Model::drawMeshPrimitives(Node* node, Shader& shader)
+{
+    shader.setMat4("model", node->getGlobalTransform());
+
+    for (const Primitive* p : node->mesh->primitives)
+    {
+        const glTFImporter::Material& material = materials.at(p->materialID);
+        shader.setInt("baseColorTexture", materials.at(p->materialID).baseColorTexture->glBufferId);
+        if (material.hasNormalTexture)
+        {
+            shader.setInt("normalTexture", materials.at(p->materialID).normalTexture->glBufferId);
+        }
+
+        glDrawElements(p->mode, p->numIndices, GL_UNSIGNED_INT, (void*)(p->startIndices * sizeof(GL_UNSIGNED_INT)));
+    }
+}
+
+
+void glTFImporter::Model::createTextureBuffers()
 {
     std::vector<GLuint> texIds;
     texIds.resize(materials.size());
@@ -403,27 +424,64 @@ void glTFImporter::Model::createTextureBuffers(GLuint &texture)
     glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
-    for (int i = 0; i < materials.size(); ++i)
+
+    GLuint lastBufferId = 1;
+
+    for (std::unordered_map<int, Material>::iterator it = materials.begin(); it != materials.end(); ++it)
     {
         // Load base color texture
-        GLuint& id = texIds[i];
-        const glTFImporter::Material mat = materials[i];
-        glGenTextures(1, &id);
+        const glTFImporter::Material& mat = it->second;
 
-        glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, id);
-        glBindSampler(GL_TEXTURE0 + i, sampler);
+        if (mat.hasBaseColorTexture)
+        {
+            GLuint id;
+            glActiveTexture(GL_TEXTURE0 + lastBufferId);
 
-        glTexImage2D(GL_TEXTURE_2D,
-            /* level */ 0,
-            /* texel format */ GL_RGBA,
-            /* width, height, border */ mat.baseColorTexture->image->width, mat.baseColorTexture->image->height, 0,
-            /* data format */ GL_RGBA, /* data type */ mat.baseColorTexture->image->pixel_type,
-            /* data */ mat.baseColorTexture->image->imData.data());
+            glGenTextures(1, &id);
+            glBindTexture(GL_TEXTURE_2D, id);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+            glBindSampler(GL_TEXTURE0 + lastBufferId, sampler);
+            glTexImage2D(GL_TEXTURE_2D,
+                /* level */ 0,
+                /* texel format */ GL_RGBA,
+                /* width, height, border */ mat.baseColorTexture->image->width, mat.baseColorTexture->image->height, 0,
+                /* data format */ GL_RGBA, /* data type */ mat.baseColorTexture->image->pixel_type,
+                /* data */ mat.baseColorTexture->image->imData.data());
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+            mat.baseColorTexture->glBufferId = id;
+            textureBufferIds.push_back(id);
+
+
+            ++lastBufferId;
+        }
+
+        if (mat.hasNormalTexture)
+        {
+            GLuint id;
+            glActiveTexture(GL_TEXTURE0 + lastBufferId);
+
+            glGenTextures(1, &id);
+            glBindTexture(GL_TEXTURE_2D, id);
+
+            glBindSampler(GL_TEXTURE0 + lastBufferId, sampler);
+
+            glTexImage2D(GL_TEXTURE_2D,
+                /* level */ 0,
+                /* texel format */ GL_RGBA,
+                /* width, height, border */ mat.normalTexture->image->width, mat.normalTexture->image->height, 0,
+                /* data format */ GL_RGBA, /* data type */ mat.normalTexture->image->pixel_type,
+                /* data */ mat.normalTexture->image->imData.data());
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+            mat.normalTexture->glBufferId = id;
+            textureBufferIds.push_back(id);
+
+            ++lastBufferId;
+        }
+
+
     }
-    
 }
 
 
@@ -471,9 +529,6 @@ void glTFImporter::Model::loadSamplers(tinygltf::Model& model)
     std::cerr << "Loaded: " << samplers.size() << " samplers." << std::endl;
 }
 
-
-
-
 glm::mat4 glTFImporter::Node::getLocalTransform()
 {
     //return ( glm::translate(glm::mat4(1.0), translation) * glm::toMat4(rotation) * glm::scale(glm::mat4(1.0), scale) ) * matrix;.
@@ -496,4 +551,9 @@ glm::mat4 glTFImporter::Node::getGlobalTransform()
     }
 
     return globalTransform;
+}
+
+glTFImporter::Model::~Model()
+{
+    glDeleteBuffers(1, textureBufferIds.data());
 }

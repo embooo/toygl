@@ -12,7 +12,6 @@
 
 namespace glTFImporter
 {
-
     // Forward declarations
     struct Primitive;
     struct Mesh;
@@ -79,6 +78,7 @@ namespace glTFImporter
         // Metallic-Roughness-Model (default model)
         Texture* baseColorTexture;
         glm::vec4 baseColorFactor;
+        bool hasBaseColorTexture = false;
 
         // Metallic
         Texture* metallicRoughnessTexture;
@@ -87,7 +87,8 @@ namespace glTFImporter
         float roughnessFactor = 1.0;
         // Normal
         Texture* normalTexture;
-
+        bool hasNormalTexture = false;
+        
         // Ambiant occlusion
         Texture* occlusionTexture;
 
@@ -131,6 +132,7 @@ namespace glTFImporter
 
     struct Texture
     {
+        GLuint glBufferId;
         std::string name;
         int index;
         Image*   image;
@@ -157,9 +159,6 @@ namespace glTFImporter
         double zFar;
         double zNear;
     };
-
-
-
 
 
     template<typename T>
@@ -194,7 +193,7 @@ namespace glTFImporter
         VertexBuffer m_VBO;
 
         std::vector<glTFImporter::Node*> nodes;
-        void loadMaterials(tinygltf::Model& model);
+        void loadMaterials(tinygltf::Material& material, int materialId);
         void loadTextures(tinygltf::Model& model);
         void loadImages(tinygltf::Model& model);
         void loadSamplers(tinygltf::Model& model);
@@ -205,14 +204,18 @@ namespace glTFImporter
         tinygltf::Model tinyglTFModel;
 
         std::vector<Texture> textures;
-        std::vector<Material> materials;
+        std::vector<GLuint>  textureBufferIds;
+
+        std::unordered_map<int, Material> materials;
         std::vector<Image> images;
         std::vector<Sampler> samplers;
 
-        GLuint texture;
         void loadFromFile(const std::string& filename);
-        void createTextureBuffers(GLuint& texture);
+        void createTextureBuffers();
         void traverseNode(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, int parentIndex, glTFImporter::Node* parent, const tinygltf::Node& glTFDataNode);
         void processElements(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, glTFImporter::Node* parent, const tinygltf::Node& node, glTFImporter::Node* internalNode);
+
+
+        ~Model();
     };
 }

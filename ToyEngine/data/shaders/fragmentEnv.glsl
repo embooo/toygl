@@ -19,6 +19,8 @@ uniform sampler2D baseColorTexture;
 uniform vec4      baseColorFactor;
 uniform int       currentTexcoord;
 
+uniform sampler2D normalTexture;
+
 // Varyings
 in  vec3 vPosition; 
 in  vec3 vNormal; 
@@ -72,6 +74,7 @@ void main( )
     color += albedo * sky.diffuse;
     
     vec4 baseColorTex = texture(baseColorTexture, texcoords[currentTexcoord]);
+    vec4 normalTex    = texture(normalTexture, texcoords[currentTexcoord]);
 
 
     fragment_color  = vec4(color, 1.0) * baseColorTex;   

@@ -388,6 +388,16 @@ void glTFImporter::Model::loadMaterials(tinygltf::Material& material, int materi
             internalMat.normalTexture->texCoordSet = material.normalTexture.texCoord;
         }
 
+        // Emissive 
+        if (material.emissiveTexture.index != -1)
+        {
+            internalMat.hasEmissiveTexture = true;
+            internalMat.emissiveTexture = &textures[material.emissiveTexture.index];
+            internalMat.emissiveTexture->index = material.emissiveTexture.index;
+            internalMat.emissiveTexture->texCoordSet = material.emissiveTexture.texCoord;
+            internalMat.emissiveFactor = glm::make_vec3(material.emissiveFactor.data());
+        }
+
         materials.insert(std::pair<int, Material>(materialId, internalMat)) ;
 }
 
@@ -400,10 +410,19 @@ void glTFImporter::Model::drawMeshPrimitives(Node* node, Shader& shader)
     for (const Primitive* p : node->mesh->primitives)
     {
         const glTFImporter::Material& material = materials.at(p->materialID);
-        shader.setInt("baseColorTexture", materials.at(p->materialID).baseColorTexture->glBufferId);
+        if (material.hasBaseColorTexture)
+        {
+            shader.setInt("baseColorTexture", materials.at(p->materialID).baseColorTexture->glBufferId);
+        }
         if (material.hasNormalTexture)
         {
             shader.setInt("normalTexture", materials.at(p->materialID).normalTexture->glBufferId);
+        }
+
+        if (material.hasEmissiveTexture)
+        {
+            shader.setInt("emissiveTexture", materials.at(p->materialID).emissiveTexture->glBufferId);
+            shader.setFloat3("emissiveFactor", materials.at(p->materialID).emissiveFactor);
         }
 
         glDrawElements(p->mode, p->numIndices, GL_UNSIGNED_INT, (void*)(p->startIndices * sizeof(GL_UNSIGNED_INT)));
@@ -481,6 +500,31 @@ void glTFImporter::Model::createTextureBuffers()
         }
 
 
+        if (mat.hasEmissiveTexture)
+        {
+            GLuint id;
+            glActiveTexture(GL_TEXTURE0 + lastBufferId);
+
+            glGenTextures(1, &id);
+            glBindTexture(GL_TEXTURE_2D, id);
+
+            glBindSampler(GL_TEXTURE0 + lastBufferId, sampler);
+
+            glTexImage2D(GL_TEXTURE_2D,
+                /* level */ 0,
+                /* texel format */ GL_RGBA,
+                /* width, height, border */ mat.emissiveTexture->image->width, mat.emissiveTexture->image->height, 0,
+                /* data format */ GL_RGBA, /* data type */ mat.emissiveTexture->image->pixel_type,
+                /* data */ mat.emissiveTexture->image->imData.data());
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+            mat.emissiveTexture->glBufferId = id;
+            textureBufferIds.push_back(id);
+
+            ++lastBufferId;
+        }
+
+
     }
 }
 
@@ -531,8 +575,7 @@ void glTFImporter::Model::loadSamplers(tinygltf::Model& model)
 
 glm::mat4 glTFImporter::Node::getLocalTransform()
 {
-    //return ( glm::translate(glm::mat4(1.0), translation) * glm::toMat4(rotation) * glm::scale(glm::mat4(1.0), scale) ) * matrix;.
-    return (glm::translate(glm::mat4(1.0), translation) * glm::scale(glm::mat4(1.0), scale)) * matrix;
+    return ( glm::translate(glm::mat4(1.0), translation) * glm::toMat4(rotation) * glm::scale(glm::mat4(1.0), scale) ) * matrix;
 }
 
 /// <summary>

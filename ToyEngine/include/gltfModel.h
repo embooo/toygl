@@ -94,6 +94,7 @@ namespace glTFImporter
 
         // Emissive 
         Texture* emissiveTexture;
+        bool hasEmissiveTexture = false;
         glm::vec3 emissiveFactor;
 
     };

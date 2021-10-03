@@ -75,16 +75,19 @@ namespace glTFImporter
         std::string name;
         int id;
 
-        // Metallic-Roughness-Model (default model)
+        // Metallic-Roughness workflow : Base color + Roughness + Metallic
         Texture* baseColorTexture;
         glm::vec4 baseColorFactor;
         bool hasBaseColorTexture = false;
 
-        // Metallic
+        // Metallic-ness  is store in the first component (R)
+        // Roughness is store in the second component (G)
+        // https://github.com/sbtron/glTF/blob/30de0b365d1566b1bbd8b9c140f9e995d3203226/specification/2.0/README.md#pbrmetallicroughnessmetallicroughnesstexture
         Texture* metallicRoughnessTexture;
+        bool hasMetallicRoughnessTexture = false;
         float metallicFactor  = 1.0;
-
         float roughnessFactor = 1.0;
+
         // Normal
         Texture* normalTexture;
         bool hasNormalTexture = false;

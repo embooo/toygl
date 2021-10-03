@@ -27,7 +27,7 @@ Application::Application()
     m_Shader.setMat4("projection", m_Camera.getProjectionMat());
 
     // glTF
-    model.loadFromFile("./data/models/Lantern/Lantern.gltf");
+    model.loadFromFile("./data/models/Sponza/Sponza.gltf");
 
     m_lastFrameTime = (float)glfwGetTime();
 }

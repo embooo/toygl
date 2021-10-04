@@ -17,7 +17,6 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 
 ###  Model loading
 - [x] Custom glTF 2.0 model loader (loading materials, textures, transforms)
-- [ ] MIP mapping
 
 ### Lighting 
 - [x] Lambert BRDF

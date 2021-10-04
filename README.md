@@ -1,8 +1,8 @@
 # ToyGL Renderer
 ToyGL is a hobby renderer I started developing during my spare time, written in C++11 and using OpenGL 4 API.  <br>
 
-![alt text](https://github.com/embooo/toygl/blob/main/gallery/Blinn-Normals-NoMipmap.PNG?raw=true)
-*Current progress 29/09/21 : Crytek Sponza, with base color, normal maps (no mipmap) and a directional light.*
+![alt text](https://github.com/embooo/toygl/blob/main/gallery/BlinnPhong-Mipmaps.PNG?raw=true)
+*Current progress 04/10/21 : Crytek Sponza, with base color texture, mip mapping and a directional + ambient light.
 
 ## Motivations
 My main motivation is to learn more about rendering and implement cool techniques/shaders/effects, as it is a passion of mine. <br/> It is also an opprtunity for me to apply what I'll learn during my 2nd year of master's degree in computer graphics.
@@ -23,7 +23,7 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 - [x] Blinn-Phong BRDF
 - [ ] Microfacet BRDF (Cook-Torrance)
 - [x] Point lights, directional lights
-- [x] Normal mapping
+- [ ] Normal mapping
 - [ ] Shadow mapping 
 
 ### Rendering methods

@@ -366,7 +366,7 @@ void glTFImporter::Model::loadMaterials(tinygltf::Material& material, int materi
         const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
 
         // https://substance3d.adobe.com/tutorials/courses/the-pbr-guide-part-2
-        // PBR metallic-roughness workflow : Base Color + Roughness + Metallic
+        // PBR metallic-roughness workflow : Base Color + [Roughness & Metallic]
         // Common to all workflow : Ambient occlusion map, Normal map, Height map
         
         // Base color texture
@@ -426,32 +426,36 @@ void glTFImporter::Model::drawMeshPrimitives(Node* node, Shader& shader)
         if (material.hasBaseColorTexture)
         {
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, materials.at(p->materialID).baseColorTexture->glBufferId);
-            shader.setInt("baseColorTexture", 0); // set texture's unit, not texture's id !
-            shader.setInt("currentBaseColorTexcoord", materials.at(p->materialID).baseColorTexture->texCoordSet);
+            glBindTexture(GL_TEXTURE_2D, material.baseColorTexture->glBufferId);
+            shader.setInt("baseColorTexture", 0); // set texture unit's ID, not the texture buffer's id !
+            shader.setInt("currentBaseColorTexcoord", material.baseColorTexture->texCoordSet);
         }
 
         if (material.hasNormalTexture)
         {
             glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, materials.at(p->materialID).normalTexture->glBufferId);
+            glBindTexture(GL_TEXTURE_2D, material.normalTexture->glBufferId);
             shader.setInt("normalTexture", 1);
-            shader.setInt("currentNormalTexcoord", materials.at(p->materialID).normalTexture->texCoordSet);
+            shader.setInt("currentNormalTexcoord", material.normalTexture->texCoordSet);
         }
 
-        //if (material.hasMetallicRoughnessTexture)
-        //{
-        //    shader.setInt("metallicRoughnessTexture",         materials.at(p->materialID).metallicRoughnessTexture->glBufferId);
-        //    shader.setFloat("metallicFactor",                 materials.at(p->materialID).metallicFactor);
-        //    shader.setFloat("roughnessFactor",                materials.at(p->materialID).roughnessFactor);
-        //    shader.setInt("currentMetallicRoughnessTexcoord", materials.at(p->materialID).metallicRoughnessTexture->texCoordSet);
-        //}
+        if (material.hasMetallicRoughnessTexture)
+        {
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, material.metallicRoughnessTexture->glBufferId);
+            shader.setInt("metallicRoughnessTexture",         2);
+            shader.setFloat("metallicFactor",                 material.metallicFactor);
+            shader.setFloat("roughnessFactor",                material.roughnessFactor);
+            shader.setInt("currentMetallicRoughnessTexcoord", material.metallicRoughnessTexture->texCoordSet);
+        }
 
-        //if (material.hasEmissiveTexture)
-        //{
-        //    shader.setInt("emissiveTexture",   materials.at(p->materialID).emissiveTexture->glBufferId);
-        //    shader.setFloat3("emissiveFactor", materials.at(p->materialID).emissiveFactor);
-        //}
+        if (material.hasEmissiveTexture)
+        {
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, material.emissiveTexture->glBufferId);
+            shader.setInt("emissiveTexture", 3);
+            shader.setFloat3("emissiveFactor", material.emissiveFactor);
+        }
 
 
         glDrawElements(p->mode, p->numIndices, GL_UNSIGNED_INT, (void*)(p->startIndices * sizeof(GL_UNSIGNED_INT)));
@@ -484,7 +488,6 @@ void glTFImporter::Model::createTextureBuffers()
 
     for (std::unordered_map<int, Material>::iterator it = materials.begin(); it != materials.end(); ++it)
     {
-        // Load base color texture
         const glTFImporter::Material& mat = it->second;
 
         if (mat.hasBaseColorTexture)
@@ -539,28 +542,57 @@ void glTFImporter::Model::createTextureBuffers()
             glGenerateMipmap(GL_TEXTURE_2D);
         }
 
-        //if (mat.hasMetallicRoughnessTexture)
-        //{
-        //    GLuint id;
-        //    glGenTextures(1, &id);
+        if (mat.hasMetallicRoughnessTexture)
+        {
+            GLuint id;
+            glGenTextures(1, &id);
 
-        //    glActiveTexture(GL_TEXTURE2);
-        //    glBindTexture(GL_TEXTURE_2D, id);
-        //    glBindSampler(GL_TEXTURE2, sampler);
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, id);
+            glBindSampler(GL_TEXTURE2, sampler);
 
-        //    glTexImage2D(GL_TEXTURE_2D,
-        //        /* level */ 0,
-        //        /* texel format */ GL_RGBA,
-        //        /* width, height, border */ mat.metallicRoughnessTexture->image->width, mat.metallicRoughnessTexture->image->height, 0,
-        //        /* data format */ GL_RGBA, /* data type */ mat.metallicRoughnessTexture->image->pixel_type,
-        //        /* data */ mat.metallicRoughnessTexture->image->imData.data());
-        //    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+            glTexImage2D(GL_TEXTURE_2D,
+                /* level */ 0,
+                /* texel format */ GL_RGBA,
+                /* width, height, border */ mat.metallicRoughnessTexture->image->width, mat.metallicRoughnessTexture->image->height, 0,
+                /* data format */ GL_RGBA, /* data type */ mat.metallicRoughnessTexture->image->pixel_type,
+                /* data */ mat.metallicRoughnessTexture->image->imData.data());
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
-        //    mat.normalTexture->glBufferId = id;
-        //    textureBufferIds.push_back(id);
-        //    glGenerateMipmap(GL_TEXTURE_2D);
+            mat.metallicRoughnessTexture->glBufferId = id;
+            textureBufferIds.push_back(id);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
 
-        //}
+        if (mat.hasEmissiveTexture)
+        {
+            GLuint id;
+            glGenTextures(1, &id);
+
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, id);
+            
+            glBindSampler(GL_TEXTURE3, sampler);
+            GLuint format = mat.emissiveTexture->image->channels == 3 ? GL_RGB : GL_RGBA;
+
+            glTexImage2D(GL_TEXTURE_2D,
+                /* level */ 0,
+                /* texel format */ format,
+                /* width, height, border */ mat.emissiveTexture->image->width, mat.emissiveTexture->image->height, 0,
+                /* data format */ format, /* data type */ mat.emissiveTexture->image->pixel_type,
+                /* data */ mat.emissiveTexture->image->imData.data());
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            mat.emissiveTexture->glBufferId = id;
+            textureBufferIds.push_back(id);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+
+
 
 
     }

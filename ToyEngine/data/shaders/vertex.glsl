@@ -9,30 +9,27 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec3 vertexPos;
-out vec3 vertexNormal; 
+out vec2 texcoord[2];
+
+out mat4 modelMat;
 out mat4 viewMat;
-out vec2 vTexcoord0;
-out vec2 vTexcoord1;
-
-out vec2 texcoords[2];
-
-out mat4 matModel;
 
 out vec3 p; // position du point de la surface dans le repère monde
+out vec3 n; // normale du point de la surface dans le repère monde
 
 void main( )
 {
     mat4 mvp = projection * view * model;
-    viewMat = view;
-
     vec4 pos =  mvp * vec4(position, 1.0);
+
+    modelMat = model;
+    viewMat  = view;
     
-    texcoords[0] = texcoord0;
-    texcoords[1] = texcoord1;
-    vertexPos    = position;
-    vertexNormal = normal;
-    matModel = model;
+    texcoord[0] = texcoord0;
+    texcoord[1] = texcoord1;
+
+    p = normalize( vec3( model * vec4(position, 1.0)));
+    n = normalize( vec3( model * vec4(normal,   0.0)));
     
     gl_Position = mvp * vec4(position, 1.0);
 }

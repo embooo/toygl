@@ -80,9 +80,14 @@ void Window::init()
         win->notify( WindowResizeEvent(width, height) );
     });
 
+    glfwSetWindowIconifyCallback(m_pWindow, [](GLFWwindow* window, int minimized)
+    {
+        static_cast<Window*>(glfwGetWindowUserPointer(window))->notify(WindowMinimizeEvent(minimized));
+    });
+
     glfwSetWindowCloseCallback(m_pWindow, [](GLFWwindow* window) 
     {
-        static_cast<Window*>(glfwGetWindowUserPointer(window))->notify( WindowClose() );
+        static_cast<Window*>(glfwGetWindowUserPointer(window))->notify(WindowCloseEvent());
     });
 
 }

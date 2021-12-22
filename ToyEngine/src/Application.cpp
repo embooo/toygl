@@ -26,16 +26,24 @@ Application::Application()
     model.loadFromFile("./data/models/sponza-pbr/sponza.glb");
 
     m_lastFrameTime = (float)glfwGetTime();
+
+    m_Minimized = false;
 }
 
 void Application::run()
 {
     while(!m_Window->isClosed())
     {
-        // Compute delta time
-        update( getDeltaTime() );
-        
-        render();
+        if (!m_Minimized)
+        {
+            glfwPollEvents();
+            update(getDeltaTime());
+            render();
+        }
+        else
+        {
+            glfwWaitEvents();
+        }
     }
 }
 
@@ -59,7 +67,6 @@ void Application::render()
 void Application::update(float deltaTime)
 {
     m_Camera.update(deltaTime);
-    glfwPollEvents();
 }
 
 void Application::onUpdate(Event& event)
@@ -68,6 +75,10 @@ void Application::onUpdate(Event& event)
     {
         case EventType::WindowResize:
             onWindowResize(static_cast<WindowResizeEvent&>(event)); 
+            break;
+
+        case EventType::WindowMinimize:
+            onWindowMinimize(static_cast<WindowMinimizeEvent&>(event));
             break;
 
         case EventType::KeyPressed:
@@ -97,14 +108,22 @@ float Application::getDeltaTime()
 
 void Application::onWindowResize(WindowResizeEvent& event)
 {
-    const int& width  = event.getWidth();
-    const int& height = event.getHeight();
+    if (!m_Minimized)
+    {
+        const int& width = event.getWidth();
+        const int& height = event.getHeight();
 
-    // Update framebuffer size and projection matrix
-    m_glRenderer->setViewport(width, height);
-    m_Camera.updateAspectRatio(width/(float)height);
+        // Update framebuffer size and projection matrix
+        m_glRenderer->setViewport(width, height);
+        m_Camera.updateAspectRatio(width / (float)height);
 
-    render();
+        render();
+    }
+}
+
+void Application::onWindowMinimize(WindowMinimizeEvent& event)
+{
+    m_Minimized = event.m_Minimized;
 }
 
 void Application::printSystemInfo()

@@ -25,8 +25,11 @@ public:
     virtual void onKeyPressed(KeyEvent& event);
     inline float getDeltaTime();
     virtual void onWindowResize(WindowResizeEvent& event);
+    virtual void onWindowMinimize(WindowMinimizeEvent& event);
 
     static void printSystemInfo();
+
+    bool m_Minimized;
 
 private:
     glTFImporter::Model model;

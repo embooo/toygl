@@ -17,13 +17,25 @@ public:
     int m_Width, m_Height;
 };
 
-class WindowClose : public Event
+class WindowCloseEvent : public Event
 {
 public:
-    WindowClose()
+    WindowCloseEvent()
         : m_Type(EventType::WindowClose){}
 
     virtual EventType getType() const override { return m_Type; }
 
+    EventType m_Type;
+};
+
+class WindowMinimizeEvent : public Event
+{
+public:
+    WindowMinimizeEvent(bool minimized)
+        : m_Type(EventType::WindowMinimize), m_Minimized(minimized) {}
+
+    bool m_Minimized;
+
+    virtual EventType getType() const override { return m_Type; }
     EventType m_Type;
 };

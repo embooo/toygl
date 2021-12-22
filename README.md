@@ -5,10 +5,11 @@ ToyGL is a hobby renderer I started developing during my spare time, written in 
 *Current progress 04/10/21 : Crytek Sponza, with base color texture, mip mapping and a directional + ambient light.
 
 ## Motivations
-My main motivation is to learn more about rendering and implement cool techniques/shaders/effects, as it is a passion of mine. <br/> It is also an opprtunity for me to apply what I'll learn during my 2nd year of master's degree in computer graphics.
+My main motivation is to learn more about rendering and implement cool techniques/shaders/effects, as it is a passion of mine. <br/> It is also an opportunity for me to apply what I'll learn during my 2nd year of master's degree in computer graphics.
 
 ## Features
-Currently, ToyGL is a forward renderer but the goal is to implement the [Forward+](https://takahiroharada.files.wordpress.com/2015/04/forward_plus.pdf) method to render multiple (256+) light sources while maintaining real-time level performance.
+Currently, ToyGL is a forward renderer but the goal is to implement the [Forward+](https://takahiroharada.files.wordpress.com/2015/04/forward_plus.pdf) method to render multiple light sources while maintaining real-time performance.
+
 ### General
 - [x] Free Camera
 - [x] Keyboard/Mouse events handling
@@ -21,7 +22,7 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 ### Lighting 
 - [x] Lambert BRDF
 - [x] Blinn-Phong BRDF
-- [ ] Microfacet BRDF (Cook-Torrance)
+- [x] Microfacet BRDF [Cook-Torrance '81]
 - [x] Point lights, directional lights
 - [ ] Normal mapping
 - [ ] Shadow mapping 
@@ -30,5 +31,7 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 - [ ] Forward+ 
 - [ ] Frustum culling
 
+### Resources
+[[Brian Karis, SIGGRAPH 2013] Real Shading in Unreal Engine 4](https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf)
 
 

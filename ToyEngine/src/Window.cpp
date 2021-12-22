@@ -89,6 +89,7 @@ void Window::init()
 
 void Window::swapBuffers()
 {
+    glfwSwapInterval(1); // Enable vsync
     glfwSwapBuffers(m_pWindow);
 }
 

@@ -23,7 +23,7 @@ Application::Application()
     m_Window->attach(&m_Camera);
 
     // glTF
-    model.loadFromFile("./data/models/sphere/sphere.gltf");
+    model.loadFromFile("./data/models/sponza-pbr/sponza.glb");
 
     m_lastFrameTime = (float)glfwGetTime();
 }
@@ -100,8 +100,11 @@ void Application::onWindowResize(WindowResizeEvent& event)
     const int& width  = event.getWidth();
     const int& height = event.getHeight();
 
+    // Update framebuffer size and projection matrix
     m_glRenderer->setViewport(width, height);
     m_Camera.updateAspectRatio(width/(float)height);
+
+    render();
 }
 
 void Application::printSystemInfo()

@@ -31,7 +31,7 @@ public:
 private:
     glTFImporter::Model model;
     Camera m_Camera;
-    Shader m_Shader;
+    Shader m_Shader, m_InfiniteGridShader;
 
     float m_lastFrameTime;
 

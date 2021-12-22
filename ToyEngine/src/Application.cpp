@@ -16,19 +16,14 @@ Application::Application()
     // Mesh test
     m_Camera = Camera("DefaultCam", m_Window.get(), ViewFrustum(45.0f, (float)m_Window->width(), (float)m_Window->height(), 0.1f, 100.0f), glm::vec3(0.0f, 0.0f, 5.0f));
     m_Shader.build("./data/shaders/vertex.glsl", "./data/shaders/CookTorrance.glsl");
+    m_InfiniteGridShader.build("./data/shaders/VS_InfiniteGrid.glsl", "./data/shaders/FS_InfiniteGrid.glsl");
 
     // Register to observer list to get updated when events occur
     m_Window->attach(this);
     m_Window->attach(&m_Camera);
 
-    m_Shader.use();
-    m_Shader.setMat4("model", glm::identity<glm::mat4>());
-    m_Shader.setMat4("view", m_Camera.getViewMat());
-    m_Shader.setMat4("projection", m_Camera.getProjectionMat());
-    m_Shader.setFloat3("camPos", m_Camera.pos());
-
     // glTF
-    model.loadFromFile("./data/models/sponza-pbr/sponza.glb");
+    model.loadFromFile("./data/models/sphere/sphere.gltf");
 
     m_lastFrameTime = (float)glfwGetTime();
 }
@@ -102,7 +97,11 @@ float Application::getDeltaTime()
 
 void Application::onWindowResize(WindowResizeEvent& event)
 {
-    m_glRenderer->setViewport(event.getWidth(), event.getHeight());
+    const int& width  = event.getWidth();
+    const int& height = event.getHeight();
+
+    m_glRenderer->setViewport(width, height);
+    m_Camera.updateAspectRatio(width/(float)height);
 }
 
 void Application::printSystemInfo()

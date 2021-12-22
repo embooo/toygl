@@ -65,10 +65,10 @@ public:
 
     virtual void onUpdate(Event& event) override;
     void update(const float dt = 0.1f) ;
-    
+
+    void updateAspectRatio(float aspectRatio);
 
     glm::vec3& pos() { return position; }
-    
 
     // Mouse/Keyboard events handler
     virtual void onKeyPressed(KeyEvent& event);
@@ -80,21 +80,17 @@ public:
 private:
     Window* m_WindowHandle;
     std::string name;
-
-    // Viewing volume - everything inside is visible
-    ViewFrustum viewFrustum;
-
-    // Matrices to feed to shaders
+    
+    ViewFrustum viewFrustum; 
+    
+    // Matrices 
     glm::mat4 view;
     glm::mat4 projection;
-
-    // Default position of the camera - apex of the view frustum
-    glm::vec3 position;
-    // LookAt direction
-    glm::vec3 front; // aka target
-    // Normalized vector - camera's up axis
-    glm::vec3 up;
-
+    
+    // Vectors 
+    glm::vec3 position; // Default position of the camera - apex of the view frustum
+    glm::vec3 front;    // LookAt direction aka target
+    glm::vec3 up;       // Normalized vector - camera's up axis
     glm::vec3 right;
 
     void updateViewMatrix();
@@ -107,10 +103,10 @@ private:
 
     float m_deltaTime;
     float pitch = 0.0f;
-    float yaw = -90.0f;
-    bool firstClick = true;
-    bool bMouseMoved = false;
-    bool bMoveUp = false, bMoveDown = false, bMoveFront =false, bMoveBack = false, bMoveLeft = false, bMoveRight = false;
-    bool lookAroundState = false;
+    float yaw   = -90.0f;
+    bool  firstClick  = true;
+    bool  bMouseMoved = false;
+    bool  bMoveUp = false, bMoveDown = false, bMoveFront =false, bMoveBack = false, bMoveLeft = false, bMoveRight = false;
+    bool  lookAroundState = false;
 
 };

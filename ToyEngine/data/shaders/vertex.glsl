@@ -4,6 +4,8 @@ layout(location= 0) in vec3 position;
 layout(location= 1) in vec3 normal;
 layout(location= 2) in vec2 texcoord0;
 layout(location= 3) in vec2 texcoord1;
+layout(location= 4) in vec3 tangeant;
+layout(location= 5) in vec3 bitangeant;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -16,11 +18,13 @@ out mat4 viewMat;
 
 out vec3 p; // position du point de la surface dans le repère monde
 out vec3 n; // normale du point de la surface dans le repère monde
+out vec3 t; // repère tangeant 
+out vec3 b;
 
 void main( )
 {
     mat4 mvp = projection * view * model;
-    vec4 pos =  mvp * vec4(position, 1.0);
+    vec4 pos = mvp * vec4(position, 1.0);
 
     modelMat = model;
     viewMat  = view;
@@ -28,8 +32,10 @@ void main( )
     texcoord[0] = texcoord0;
     texcoord[1] = texcoord1;
 
-    p = normalize( vec3( model * vec4(position, 1.0)));
+    p = vec3( model * vec4(position, 1.0));
     n = normalize( vec3( model * vec4(normal,   0.0)));
+    t = vec3(model * vec4(tangeant,   0.0));
+    b = vec3(model * vec4(bitangeant, 0.0));
     
     gl_Position = mvp * vec4(position, 1.0);
 }

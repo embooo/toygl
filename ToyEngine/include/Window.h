@@ -26,7 +26,7 @@ public:
 
     bool isClosed() const;
 
-    GLFWwindow* getRawPtr();
+    GLFWwindow* getRawPtr() const;
 
     // Observer pattern
     virtual void attach(IObserver* observer) override;

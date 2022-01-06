@@ -7,13 +7,17 @@ workspace "ToyGL"
 
 	include "ToyEngine/thirdparty/Glad"
 	include "ToyEngine/thirdparty/GLFW"
+	include "ToyEngine/thirdparty/ImGui"
+
 
 	IncludePaths = {}
 	IncludePaths["ToyEngine"] = "ToyEngine/include/"
-	IncludePaths["GLFW"] = "ToyEngine/thirdparty/Glad/include"
-	IncludePaths["Glad"] = "ToyEngine/thirdparty/GLFW/include"
-	IncludePaths["glm"]  = "ToyEngine/thirdparty/glm/"
+	IncludePaths["GLFW"]      = "ToyEngine/thirdparty/Glad/include"
+	IncludePaths["Glad"]      = "ToyEngine/thirdparty/GLFW/include"
+	IncludePaths["glm"]       = "ToyEngine/thirdparty/glm/"
 	IncludePaths["tinygltf"]  = "ToyEngine/thirdparty/tinygltf/"
+	IncludePaths["ImGui"]     = "ToyEngine/thirdparty/ImGui/include"
+
 	
 project "ToyEngine"
 	location "ToyEngine"
@@ -30,17 +34,19 @@ project "ToyEngine"
 
 	includedirs
 	{
-		"%{IncludePaths.ToyEngine}",
-		"%{IncludePaths.GLFW}",
-		"%{IncludePaths.Glad}",
-		"%{IncludePaths.glm}",
-		"%{IncludePaths.tinygltf}"
+		IncludePaths.ToyEngine,
+		IncludePaths.GLFW,
+		IncludePaths.Glad,
+		IncludePaths.glm,
+		IncludePaths.tinygltf,
+		IncludePaths.ImGui
 	}
 
 	links
 	{
 		"GLFW", 
-		"Glad"
+		"Glad",
+		"ImGui"
 	}
 
 	defines
@@ -57,6 +63,7 @@ project "ToyEngine"
 	filter "configurations:Debug"
 		runtime "Debug"
 		symbols "on"
+		buildoptions {"/Od"}
 
 	filter "configurations:Release"
 		runtime "Release"

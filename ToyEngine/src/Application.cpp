@@ -1,29 +1,40 @@
 #include <cassert>
 #include <iostream>
 #include "Application.h"
+#include "Light.h"
 
 Application::Application()
 {
     // Create a window with a rendering context attached
-    m_Window = std::make_unique<Window>("ToyGL", 2560, 1080, 4, 3);
-    // Create an object that will issue the render commands
+    m_Window        = std::make_unique<Window>("ToyGL", 2560, 1080, 4, 3);
+    m_UserInterface = std::make_unique<UserInterface>();
+
+    // Render commands handler
     m_glRenderer = std::make_unique<OpenGLRenderer>();
     m_glRenderer->init();
-
-    // Info log
-    printSystemInfo();
-
-    // Mesh test
-    m_Camera = Camera("DefaultCam", m_Window.get(), ViewFrustum(45.0f, (float)m_Window->width(), (float)m_Window->height(), 0.1f, 100.0f), glm::vec3(0.0f, 0.0f, 5.0f));
-    m_Shader.build("./data/shaders/vertex.glsl", "./data/shaders/CookTorrance.glsl");
-    m_InfiniteGridShader.build("./data/shaders/VS_InfiniteGrid.glsl", "./data/shaders/FS_InfiniteGrid.glsl");
 
     // Register to observer list to get updated when events occur
     m_Window->attach(this);
     m_Window->attach(&m_Camera);
+    m_Window->attach(m_UserInterface.get());
+
+    // ImGui user interface
+    m_UserInterface->init(*m_Window);
+
+
+    printSystemInfo();
+
+    // Mesh test
+    m_Camera = Camera("DefaultCam", m_Window.get(), ViewFrustum(45.0f, (float)m_Window->width(), (float)m_Window->height(), 0.1f, 100.0f), glm::vec3(0.0f, 0.0f, 5.0f));
+    m_Shader            .build("./data/shaders/vertex.glsl", "./data/shaders/CookTorrance.glsl");
+    m_InfiniteGridShader.build("./data/shaders/VS_InfiniteGrid.glsl", "./data/shaders/FS_InfiniteGrid.glsl");
+
+
 
     // glTF
     model.loadFromFile("./data/models/sponza-pbr/sponza.glb");
+    //model.loadFromFile("./data/models/gas_stations_fixed/scene.gltf");
+    m_Camera.lookAt(model.bbox.min, model.bbox.max);
 
     m_lastFrameTime = (float)glfwGetTime();
 
@@ -38,6 +49,7 @@ void Application::run()
         {
             glfwPollEvents();
             update(getDeltaTime());
+
             render();
         }
         else
@@ -51,15 +63,23 @@ void Application::render()
 {
     m_glRenderer->clear();
 
-    m_Shader.use();
-    
-    m_Shader.setMat4("model", glm::identity<glm::mat4>());
-    m_Shader.setMat4("view", m_Camera.getViewMat());
-    m_Shader.setMat4("projection", m_Camera.getProjectionMat());
+    {
+        // Render geometry
+        m_Shader.use();
 
-    m_Shader.setFloat3("cameraPos", m_Camera.pos());
+        m_Shader.setMat4("model", glm::identity<glm::mat4>() * glm::scale(glm::vec3(10, 10, 10)));
+        m_Shader.setMat4("view", m_Camera.getViewMat());
+        m_Shader.setMat4("projection", m_Camera.getProjectionMat());
 
-    model.draw(m_Shader);
+        m_Shader.setFloat3("cameraPos", m_Camera.pos());
+        model.draw(m_Shader);
+    }
+
+    {
+        // Render user interface
+        m_UserInterface->render();
+    }
+
 
     m_Window->swapBuffers();
 }
@@ -93,6 +113,7 @@ void Application::onKeyPressed(KeyEvent& event)
     {
         case GLFW_KEY_R:
             m_Shader.rebuild();
+
         break;
     }
 }

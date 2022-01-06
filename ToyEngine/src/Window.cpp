@@ -103,7 +103,7 @@ bool Window::isClosed() const
     return glfwWindowShouldClose(m_pWindow);
 }
 
-GLFWwindow* Window::getRawPtr()
+GLFWwindow* Window::getRawPtr() const
 {
     return m_pWindow;
 }

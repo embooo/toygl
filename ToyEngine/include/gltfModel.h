@@ -10,7 +10,7 @@
 #include "Shader.h"
 #include "tiny_gltf.h"
 
-namespace glTFImporter
+namespace gltf
 {
     // Forward declarations
     struct Primitive;
@@ -18,6 +18,28 @@ namespace glTFImporter
     struct Material;
     struct Texture;
     struct Camera;
+
+    struct BoundingBox
+    {
+        BoundingBox() :
+            min(glm::vec3(std::numeric_limits<float>::max())), max(glm::vec3(std::numeric_limits<float>::min())) {}
+
+        glm::vec3 min;
+        glm::vec3 max;
+
+        friend std::ostream& operator<<(std::ostream& os, const BoundingBox& bbox) 
+        {  
+            os << "min : (" << bbox.min.x << ", " << bbox.min.y << ", " << bbox.min.z << ") max : (" << bbox.max.x << ", " << bbox.max.y << ", " << bbox.max.z << ")";
+
+            return os;
+        }
+
+        void update(const glm::vec3& p) 
+        { 
+            min = glm::min(min, p); 
+            max = glm::max(max, p); 
+        }
+    };
 
     struct Node
     {
@@ -31,8 +53,8 @@ namespace glTFImporter
         glm::quat rotation    = glm::quat(1.0, 0.0, 0.0, 0.0);
         glm::vec3 scale       = glm::vec3(1.0, 1.0, 1.0);
 
-        glm::mat4 getLocalTransform();
-        glm::mat4 getGlobalTransform();
+        glm::mat4 getLocalTransform() const;
+        glm::mat4 getGlobalTransform() ;
 
         std::string name;
         int index;
@@ -54,9 +76,7 @@ namespace glTFImporter
 
     struct Primitive
     {
-        // Rendering mode
-        // Whether it should rendered as POINTS, LINES or TRIANGLES
-        uint32_t mode;
+        uint32_t mode;  // GL_TRIANGLES ...
         int materialID;
 
         // Needed to access parts of the element/vertex buffers
@@ -175,8 +195,6 @@ namespace glTFImporter
         int stride;
     };
 
-
-
     struct Model
     {
         Model() {};
@@ -186,24 +204,24 @@ namespace glTFImporter
             glm::vec3 normal;
             glm::vec2 texcoord_0;
             glm::vec2 texcoord_1;
+            glm::vec3 tangeant;
+            glm::vec3 bitangeant;
         };
 
         GLenum indicesType;
         //size_t numIndices;
         size_t totalNumVertices = 0;
 
-        VertexArray m_VAO;
+        VertexArray   m_VAO;
         ElementBuffer m_EBO;
-        VertexBuffer m_VBO;
+        VertexBuffer  m_VBO;
 
-        std::vector<glTFImporter::Node*> nodes;
+        std::vector<gltf::Node*> nodes;
         void loadMaterials(tinygltf::Material& material, int materialId);
         void loadTextures(tinygltf::Model& model);
         void loadImages(tinygltf::Model& model);
         void loadSamplers(tinygltf::Model& model);
-        void drawRecursively(Node* node, Shader& shader);
-        void draw(Shader& shader);
-        void drawMeshPrimitives(Node* node, Shader& shader);
+        void generateTangeantsBitangeants();
 
         tinygltf::Model tinyglTFModel;
 
@@ -214,12 +232,17 @@ namespace glTFImporter
         std::vector<Image> images;
         std::vector<Sampler> samplers;
 
+        std::vector<Vertex> vertices;
+        std::vector<unsigned int> indices;
+
+        BoundingBox bbox;
+
         void loadFromFile(const std::string& filename);
         void createTextureBuffers();
-        void traverseNode(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, int parentIndex, glTFImporter::Node* parent, const tinygltf::Node& glTFDataNode);
-        void processElements(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, glTFImporter::Node* parent, const tinygltf::Node& node, glTFImporter::Node* internalNode);
-
+        void traverseNode(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, int parentIndex, gltf::Node* parent, const tinygltf::Node& glTFDataNode);
+        void processElements(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, gltf::Node* parent, const tinygltf::Node& node, gltf::Node* internalNode);
 
         ~Model();
     };
 }
+

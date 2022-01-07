@@ -7,37 +7,10 @@
 #include "gltfModel.h"
 #include <glm/gtc/type_ptr.hpp>
 
-void glTFImporter::Model::draw(Shader& shader)
-{
-    m_VBO.bind();
-    m_VAO.bind();
-
-    //glDrawArrays(GL_LINE, 0, totalNumVertices);
-
-    for(Node* node : nodes)
-    {
-        drawRecursively(node, shader);
-    }
-}
-
-void glTFImporter::Model::drawRecursively(Node* node, Shader& shader)
-{
-    if (node->mesh)
-    {
-        drawMeshPrimitives(node, shader);
-    }
-
-    if (!node->children.empty())
-    {
-        for (Node* child : node->children)
-        {
-            drawRecursively(child, shader);
-        }
-    }
-}
 
 
-void glTFImporter::Model::loadFromFile(const std::string& filename)
+
+void gltf::Model::loadFromFile(const std::string& filename)
 {
     std::string error;
     std::string warning;
@@ -58,9 +31,6 @@ void glTFImporter::Model::loadFromFile(const std::string& filename)
     {
         std::cout << "Loaded " << filename << " successfully. \n";
 
-        std::vector<Vertex> vertices;
-        std::vector<unsigned int> indices;
-
         loadImages(tinyglTFModel);
         loadSamplers(tinyglTFModel);
         loadTextures(tinyglTFModel);
@@ -76,6 +46,11 @@ void glTFImporter::Model::loadFromFile(const std::string& filename)
                traverseNode(tinyglTFModel, vertices, indices, nodeId, nullptr, node);
             }
         }
+
+        std::cerr << "Model : \n" << "Bounding box : " << bbox << std::endl;
+
+        // Compute tangeants and bitangeant
+        generateTangeantsBitangeants();
 
         std::cerr << "Loaded: " << materials.size() << " materials." << std::endl;
 
@@ -109,6 +84,8 @@ void glTFImporter::Model::loadFromFile(const std::string& filename)
         m_VAO.setupAttribute(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, normal));
         m_VAO.setupAttribute(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, texcoord_0));
         m_VAO.setupAttribute(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, texcoord_1));
+        m_VAO.setupAttribute(4, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, tangeant));
+        m_VAO.setupAttribute(5, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, bitangeant));
 
         // Finished modifying our buffers and array
         m_VAO.unbind();
@@ -129,9 +106,9 @@ void glTFImporter::Model::loadFromFile(const std::string& filename)
 /// <param name="parentIndex"> Index of the parent node in the glTF file </param>
 /// <param name="parent"> Internal representation of a glTF node </param>
 /// <param name="glTFDataNode"> Tinygltf representation of a glTF node </param>
-void glTFImporter::Model::traverseNode(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, int nodeIndex, glTFImporter::Node* parent, const tinygltf::Node& glTFDataNode)   
+void gltf::Model::traverseNode(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, int nodeIndex, gltf::Node* parent, const tinygltf::Node& glTFDataNode)   
 {
-    glTFImporter::Node* current(new Node{});
+    gltf::Node* current(new Node{});
     
     processElements(model, vertices, indices, parent, glTFDataNode, current);
 
@@ -152,7 +129,7 @@ void glTFImporter::Model::traverseNode(tinygltf::Model& model, std::vector<Verte
 /// <param name="node"></param>
 
 
-void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, glTFImporter::Node* parent, const tinygltf::Node& node, glTFImporter::Node* internalNode)  // processNode
+void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, gltf::Node* parent, const tinygltf::Node& node, gltf::Node* internalNode)  // processNode
 {
     internalNode->name = node.mesh;
     // Extract local transform
@@ -179,7 +156,7 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
     // Check if node refers to a mesh or a camera
     if (node.mesh != -1)
     {
-        internalNode->mesh = new Mesh();
+        internalNode->mesh = new gltf::Mesh();
         const tinygltf::Mesh& glTFMesh = model.meshes.at(node.mesh);
         internalNode->mesh->name = glTFMesh.name;
 
@@ -253,6 +230,8 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
                 Vertex vertex;
                 
                 vertex.position   = glm::make_vec3(&positionBuffer [i * 3]);
+
+                bbox.update(vertex.position);
 
                 if(normalBuffer)    vertex.normal     = glm::make_vec3(&normalBuffer[i * 3]);
                 if(texcoord0Buffer) vertex.texcoord_0 = glm::make_vec2(&texcoord0Buffer[i * 2]);
@@ -359,9 +338,9 @@ void glTFImporter::Model::processElements(tinygltf::Model& model, std::vector<Ve
     }
 }
 
-void glTFImporter::Model::loadMaterials(tinygltf::Material& material, int materialId)
+void gltf::Model::loadMaterials(tinygltf::Material& material, int materialId)
 {
-        glTFImporter::Material internalMat;
+        gltf::Material internalMat;
         
         const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
 
@@ -414,56 +393,55 @@ void glTFImporter::Model::loadMaterials(tinygltf::Material& material, int materi
         materials.insert(std::pair<int, Material>(materialId, internalMat)) ;
 }
 
-
-
-void glTFImporter::Model::drawMeshPrimitives(Node* node, Shader& shader)
+void gltf::Model::generateTangeantsBitangeants()
 {
-    shader.setMat4("model", node->getGlobalTransform());
-
-    for (const Primitive* p : node->mesh->primitives)
+    for (size_t i = 0; i < indices.size(); i+=3)
     {
-        const glTFImporter::Material& material = materials.at(p->materialID);
-        if (material.hasBaseColorTexture)
-        {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, material.baseColorTexture->glBufferId);
-            shader.setInt("baseColorTexture", 0); // set texture unit's ID, not the texture buffer's id !
-            shader.setInt("currentBaseColorTexcoord", material.baseColorTexture->texCoordSet);
-        }
 
-        if (material.hasNormalTexture)
-        {
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, material.normalTexture->glBufferId);
-            shader.setInt("normalTexture", 1);
-            shader.setInt("currentNormalTexcoord", material.normalTexture->texCoordSet);
-        }
+        unsigned i0 = indices.at(i);
+        unsigned i1 = indices.at(i+1);
+        unsigned i2 = indices.at(i+2);
 
-        if (material.hasMetallicRoughnessTexture)
-        {
-            glActiveTexture(GL_TEXTURE2);
-            glBindTexture(GL_TEXTURE_2D, material.metallicRoughnessTexture->glBufferId);
-            shader.setInt("metallicRoughnessTexture",         2);
-            shader.setFloat("metallicFactor",                 material.metallicFactor);
-            shader.setFloat("roughnessFactor",                material.roughnessFactor);
-            shader.setInt("currentMetallicRoughnessTexcoord", material.metallicRoughnessTexture->texCoordSet);
-        }
+        Vertex& v0 = vertices.at(i0);
+        Vertex& v1 = vertices.at(i1);
+        Vertex& v2 = vertices.at(i2);
 
-        if (material.hasEmissiveTexture)
-        {
-            glActiveTexture(GL_TEXTURE3);
-            glBindTexture(GL_TEXTURE_2D, material.emissiveTexture->glBufferId);
-            shader.setInt("emissiveTexture", 3);
-            shader.setFloat3("emissiveFactor", material.emissiveFactor);
-        }
+        v0.tangeant   = v1.tangeant   = v2.tangeant   = glm::vec3(0, 0, 0);
+        v0.bitangeant = v1.bitangeant = v2.bitangeant = glm::vec3(0, 0, 0);
 
+        const glm::vec2& uv0 = vertices.at(i0).texcoord_0;
+        const glm::vec2& uv1 = vertices.at(i1).texcoord_0;
+        const glm::vec2& uv2 = vertices.at(i2).texcoord_0;
 
-        glDrawElements(p->mode, p->numIndices, GL_UNSIGNED_INT, (void*)(p->startIndices * sizeof(GL_UNSIGNED_INT)));
+        glm::vec3 E1       = v1.position - v0.position;
+        glm::vec3 E2       = v2.position - v0.position;
+        glm::vec2 deltaUV1 = uv1 - uv0;
+        glm::vec2 deltaUV2 = uv2 - uv0;
+
+        float div = (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+        float r   = (div == 0.0f) ? 0.0f : 1.0f / div;
+
+        glm::vec3 tangeant   = r * (E1 * deltaUV2.y - E2 * deltaUV1.y);
+        glm::vec3 bitangeant = r * (E2 * deltaUV1.x - E1 * deltaUV2.x);
+
+        v0.tangeant += tangeant;
+        v1.tangeant += tangeant;
+        v2.tangeant += tangeant;
+
+        v0.bitangeant += bitangeant;
+        v1.bitangeant += bitangeant;
+        v2.bitangeant += bitangeant;
+    }
+
+    // Gram-Schmidt orthogonalization (to get an orthonormal basis)
+    for (int i = 0; i < vertices.size(); i++)
+    {
+        Vertex& v = vertices.at(i);
+        v.tangeant = glm::normalize((v.tangeant - v.normal) * glm::dot(v.normal, v.tangeant));
     }
 }
 
-
-void glTFImporter::Model::createTextureBuffers()
+void gltf::Model::createTextureBuffers()
 {
     std::vector<GLuint> texIds;
     texIds.resize(materials.size());
@@ -488,7 +466,7 @@ void glTFImporter::Model::createTextureBuffers()
 
     for (std::unordered_map<int, Material>::iterator it = materials.begin(); it != materials.end(); ++it)
     {
-        const glTFImporter::Material& mat = it->second;
+        const gltf::Material& mat = it->second;
 
         if (mat.hasBaseColorTexture)
         {
@@ -598,8 +576,7 @@ void glTFImporter::Model::createTextureBuffers()
     }
 }
 
-
-void glTFImporter::Model::loadTextures(tinygltf::Model& model)
+void gltf::Model::loadTextures(tinygltf::Model& model)
 {
     for (const tinygltf::Texture& tex : model.textures)
     {
@@ -621,19 +598,18 @@ void glTFImporter::Model::loadTextures(tinygltf::Model& model)
 
 }
 
-void glTFImporter::Model::loadImages(tinygltf::Model& model)
+void gltf::Model::loadImages(tinygltf::Model& model)
 {
     for (const tinygltf::Image& im : model.images)
     {
-        images.push_back( glTFImporter::Image(im.uri, im.width, im.height, im.bits, im.component, im.pixel_type, im.image) );
+        images.push_back( gltf::Image(im.uri, im.width, im.height, im.bits, im.component, im.pixel_type, im.image) );
     }
 
     std::cerr << "Loaded: " << images.size() << " images." << std::endl;
 
 }
 
-
-void glTFImporter::Model::loadSamplers(tinygltf::Model& model)
+void gltf::Model::loadSamplers(tinygltf::Model& model)
 {
     for (const tinygltf::Sampler& smp : model.samplers)
     {
@@ -643,7 +619,7 @@ void glTFImporter::Model::loadSamplers(tinygltf::Model& model)
     std::cerr << "Loaded: " << samplers.size() << " samplers." << std::endl;
 }
 
-glm::mat4 glTFImporter::Node::getLocalTransform()
+glm::mat4 gltf::Node::getLocalTransform() const
 {
     return ( glm::translate(glm::mat4(1.0), translation) * glm::toMat4(rotation) * glm::scale(glm::mat4(1.0), scale) ) * matrix;
 }
@@ -652,21 +628,21 @@ glm::mat4 glTFImporter::Node::getLocalTransform()
 /// 
 /// </summary>
 /// <returns> Global transform of the node </returns>
-glm::mat4 glTFImporter::Node::getGlobalTransform()
+glm::mat4 gltf::Node::getGlobalTransform() 
 {
     // The global transform of a node is given by the product of all local transforms on the path from the root to the respective node. (glTF 2.0 Quick Reference Guide)
     glm::mat4 globalTransform = getLocalTransform();
     
     while(parent)
     {
-        globalTransform = globalTransform * parent->matrix;
+        globalTransform = globalTransform * parent->getLocalTransform();
         parent = parent->parent;
     }
 
     return globalTransform;
 }
 
-glTFImporter::Model::~Model()
+gltf::Model::~Model()
 {
     glDeleteBuffers(1, textureBufferIds.data());
 }

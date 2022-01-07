@@ -27,6 +27,9 @@
     <ClInclude Include="include\KeyboardEvent.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\Light.h">
+      <Filter>include</Filter>
+    </ClInclude>
     <ClInclude Include="include\Mesh.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -37,6 +40,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\OpenGLRenderer.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\UserInterface.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\Window.h">
@@ -62,6 +68,9 @@
     <ClCompile Include="src\Event.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Light.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="src\Mesh.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -69,6 +78,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\OpenGLRenderer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UserInterface.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\Window.cpp">

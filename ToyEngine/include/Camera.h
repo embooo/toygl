@@ -59,12 +59,14 @@ public:
 
     const glm::mat4& getViewMat() const;
     const glm::mat4& getProjectionMat() const;
+    const glm::vec3& getPos() const;
 
     void move(const glm::vec3& dir, float deltaTime);
     void rotate(float deltaTime);
+    void lookAt(const glm::vec3& a, const glm::vec3& b);
 
     virtual void onUpdate(Event& event) override;
-    void update(const float dt = 0.1f) ;
+    void update(const float dt = 0.1f);
 
     void updateAspectRatio(float aspectRatio);
 
@@ -94,9 +96,16 @@ private:
     glm::vec3 right;
 
     void updateViewMatrix();
+    void updateProjMatrix();
+
+    // Applies a translation to the camera's center. Not used during updates.
+    void translate(glm::vec3& tvec);
 
     float m_MoveSpeed;
     float m_LookSpeed;
+
+    // Length between the observed point and the camera's center
+    float m_Distance;
 
     float rotYawAmount = 0.0f, rotPitchAmount = 0.0f;
     float horizontalSensitivity = 0.1f, verticalSensitivity = 0.1f;
@@ -108,5 +117,4 @@ private:
     bool  bMouseMoved = false;
     bool  bMoveUp = false, bMoveDown = false, bMoveFront =false, bMoveBack = false, bMoveLeft = false, bMoveRight = false;
     bool  lookAroundState = false;
-
 };

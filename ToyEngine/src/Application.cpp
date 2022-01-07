@@ -32,8 +32,10 @@ Application::Application()
 
 
     // glTF
-    model.loadFromFile("./data/models/sponza-pbr/sponza.glb");
-    //model.loadFromFile("./data/models/gas_stations_fixed/scene.gltf");
+    //model.loadFromFile("./data/models/sponza-pbr/scene.glb");
+    model.loadFromFile("./data/models/duck/scene.gltf");
+    //model.loadFromFile("./data/models/bistro/scene.glb");
+    //model.loadFromFile("./data/models/sphere/scene.gltf");
     m_Camera.lookAt(model.bbox.min, model.bbox.max);
 
     m_lastFrameTime = (float)glfwGetTime();
@@ -61,26 +63,13 @@ void Application::run()
 void Application::render()
 {
     m_glRenderer->clear();
-
     {
         // Prepare user interface
-        m_UserInterface->beginFrame(light);
+        m_UserInterface->beginFrame(light, m_Camera , *m_glRenderer);
 
         {
             // Render geometry
-            m_Shader.use();
-
-            m_Shader.setMat4("model", glm::identity<glm::mat4>() * glm::scale(glm::vec3(10, 10, 10)));
-            m_Shader.setMat4("view", m_Camera.getViewMat());
-            m_Shader.setMat4("projection", m_Camera.getProjectionMat());
-
-            m_Shader.setFloat3("cameraPos", m_Camera.pos());
-            m_Shader.setFloat3("lightPos",  light.pos());
-            m_Shader.setFloat4("lightColor",  light.color());
-            
-            m_Shader.setFloat("lightRadius",((PointLight&)light).radius());
-            
-            model.draw(m_Shader);
+            m_glRenderer->render(model, m_Shader, m_Camera, light);
         }
     
         // Render user interface

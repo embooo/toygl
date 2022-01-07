@@ -6,15 +6,15 @@ Camera::Camera()
     position(glm::vec3(0.0f,0.0f, 5.0f)), front(glm::vec3(0.0f, 0.0f, -1.0f)), up(glm::vec3(0.0f, 1.0f, 0.0f)), 
     view(glm::lookAt(position, position + front, up)),
     projection(glm::perspective(viewFrustum.fieldOfView, viewFrustum.aspectRatio, viewFrustum.zNear, viewFrustum.zFar)), 
-    m_MoveSpeed(2.0f), m_LookSpeed (0.25f)
+    m_MoveSpeed(2.0f), m_LookSpeed (0.25f), m_Distance(1.0f)
 {
     right = glm::normalize(glm::cross(front, up));
 }
 
 Camera::Camera(const std::string& name, Window* window, const ViewFrustum& frustum, const glm::vec3& pos, const glm::vec3& front, const glm::vec3& up)
     : name(name), position(pos), front(glm::normalize(front)), up(glm::normalize(up)), viewFrustum(frustum), 
-    view(glm::lookAt(pos, glm::normalize(pos + front), up)),
-    projection(glm::perspective(frustum.fieldOfView, frustum.aspectRatio, frustum.zNear, frustum.zFar)), m_MoveSpeed(2.0f),m_LookSpeed (0.25f), m_WindowHandle(window)
+    view(glm::lookAt(pos, glm::normalize(pos + front), up)), 
+    projection(glm::perspective(frustum.fieldOfView, frustum.aspectRatio, frustum.zNear, frustum.zFar)), m_MoveSpeed(2.0f),m_LookSpeed (0.25f), m_WindowHandle(window), m_Distance(1.0f)
 {
     right = glm::cross(front, up);
 }
@@ -27,6 +27,11 @@ const glm::mat4& Camera::getViewMat() const
 const glm::mat4& Camera::getProjectionMat() const
 {
     return projection;
+}
+
+const glm::vec3& Camera::getPos() const
+{
+    return position;
 }
 
 
@@ -148,7 +153,17 @@ void Camera::onMouseMove(MouseMove& event)
 
 void Camera::onMouseScroll(MouseScroll& event)
 {
-    move(front * (float)event.getYOffset() * m_MoveSpeed * 10.0f, m_deltaTime);
+    move(front * (float)event.getYOffset() * m_MoveSpeed, m_deltaTime);
+}
+
+void Camera::move(const glm::vec3& dir, float deltaTime)
+{
+    // Update camera's vectors
+    right       = glm::normalize(glm::cross(front, up));
+    position   += dir * m_MoveSpeed * deltaTime;
+    
+    // Update view matrix
+    view = glm::lookAt(position, position + front, up);
 }
 
 void Camera::updateViewMatrix()
@@ -156,16 +171,19 @@ void Camera::updateViewMatrix()
     view = glm::lookAt(position, position + front, up);
 }
 
-void Camera::move(const glm::vec3& dir, float deltaTime)
+void Camera::updateProjMatrix()
 {
-    // Update 
-    right = glm::normalize(glm::cross(front, up));
+    projection = glm::perspective(viewFrustum.fieldOfView, viewFrustum.aspectRatio, viewFrustum.zNear, viewFrustum.zFar);
+}
 
-    // Update camera's position
-    position += (dir * m_MoveSpeed * deltaTime);
+void Camera::updateAspectRatio(float aspectRatio)
+{
+    viewFrustum.aspectRatio = aspectRatio;
+}
 
-    // Update view matrix
-    view = glm::lookAt(position, position + front, up);
+void Camera::translate(glm::vec3& tvec)
+{
+    position += m_Distance * tvec;
 }
     
 void Camera::rotate(float deltaTime)
@@ -179,7 +197,15 @@ void Camera::rotate(float deltaTime)
     updateViewMatrix();
 }
 
-void Camera::updateAspectRatio(float aspectRatio)
+void Camera::lookAt(const glm::vec3& a, const glm::vec3& b)
 {
-    projection = glm::perspective(viewFrustum.fieldOfView, aspectRatio, viewFrustum.zNear, viewFrustum.zFar);
+    glm::vec3 center = (a + b) * 0.5f;
+    //m_Distance = glm::distance(a, b);
+    //position   = glm::vec3(0.0f);
+    //front      = glm::vec3(center.x, front.y, center.y);
+
+    viewFrustum.zFar  = b.z;
+
+    updateProjMatrix();
+    updateViewMatrix();
 }

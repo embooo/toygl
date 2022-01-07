@@ -59,10 +59,11 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>include;thirdparty\Glad\include;thirdparty\GLFW\include;thirdparty\glm;thirdparty\tinygltf;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;thirdparty\Glad\include;thirdparty\GLFW\include;thirdparty\glm;thirdparty\tinygltf;thirdparty\ImGui\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <AdditionalOptions>/Od %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -75,7 +76,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>include;thirdparty\Glad\include;thirdparty\GLFW\include;thirdparty\glm;thirdparty\tinygltf;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;thirdparty\Glad\include;thirdparty\GLFW\include;thirdparty\glm;thirdparty\tinygltf;thirdparty\ImGui\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -97,10 +98,12 @@
     <ClInclude Include="include\IObserver.h" />
     <ClInclude Include="include\ISubject.h" />
     <ClInclude Include="include\KeyboardEvent.h" />
+    <ClInclude Include="include\Light.h" />
     <ClInclude Include="include\Mesh.h" />
     <ClInclude Include="include\MouseEvent.h" />
     <ClInclude Include="include\OpenGLBuffers.h" />
     <ClInclude Include="include\OpenGLRenderer.h" />
+    <ClInclude Include="include\UserInterface.h" />
     <ClInclude Include="include\Window.h" />
     <ClInclude Include="include\WindowEvent.h" />
     <ClInclude Include="include\gltfModel.h" />
@@ -110,9 +113,11 @@
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\Event.cpp" />
+    <ClCompile Include="src\Light.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\OpenGLBuffers.cpp" />
     <ClCompile Include="src\OpenGLRenderer.cpp" />
+    <ClCompile Include="src\UserInterface.cpp" />
     <ClCompile Include="src\Window.cpp" />
     <ClCompile Include="src\gltfModel.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -127,6 +132,9 @@
     </ProjectReference>
     <ProjectReference Include="thirdparty\Glad\Glad.vcxproj">
       <Project>{BDD6857C-A90D-870D-52FA-6C103E10030F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="thirdparty\ImGui\ImGui.vcxproj">
+      <Project>{C0FF640D-2C14-8DBE-F595-301E616989EF}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

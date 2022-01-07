@@ -7,7 +7,6 @@
 #include "IObserver.h"
 
 // TODO : remove
-#include "gltfModel.h"
 #include "Mesh.h"
 #include "Shader.h"
 #include "Camera.h"
@@ -34,7 +33,7 @@ public:
     bool m_Minimized;
 
 private:
-    glTFImporter::Model model;
+    gltf::Model model;
     Camera m_Camera;
     Shader m_Shader, m_InfiniteGridShader;
     float m_lastFrameTime;

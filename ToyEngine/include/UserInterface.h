@@ -7,6 +7,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+#include "Light.h"
 
 class UserInterface : public IObserver
 {
@@ -14,6 +15,7 @@ public:
 	UserInterface();
 	virtual void onUpdate(Event& event) override;
 	virtual void init(const Window& window);
+	virtual void beginFrame(Light& light);
 	virtual void render();
 	virtual ~UserInterface();
 

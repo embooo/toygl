@@ -20,7 +20,15 @@ public:
 	static unsigned int Count;
 
 	Light();
-	Light(const glm::vec3 position, const std::string& name, const glm::vec4 color = glm::vec4(1));
+	Light(const glm::vec3 position, const glm::vec4 color, const std::string& name);
+
+	virtual glm::vec3& pos() { return m_Position; }
+	virtual const glm::vec3& pos() const { return m_Position; }
+
+	virtual glm::vec4& color() { return m_Color; }
+	virtual const glm::vec4& color() const { return m_Color; }
+
+	LightType& type() { return m_Type;  }
 
 	virtual ~Light();
 
@@ -34,7 +42,14 @@ protected:
 class PointLight : public Light
 {
 public:
-	PointLight(const glm::vec3& position = glm::vec3(0), const std::string& name = "PointLight_" + std::to_string(s_Count), const Attenuation& method = Attenuation::INV_SQUARE);
+	PointLight(const glm::vec3& position = glm::vec3(0), 
+			   const glm::vec4& color = glm::vec4(0,0,0,1),
+			   const std::string& name = "PointLight_" + std::to_string(s_Count), 
+			   const Attenuation& method = Attenuation::INV_SQUARE, 
+			   const LightType& type = LightType::POINT_LIGHT);
+
+	float& radius() { return m_Radius; }
+	const float& radius() const { return m_Radius; }
 
 	void Translate(const glm::vec3& tvec);
 	void UpdateRadius(float radius);

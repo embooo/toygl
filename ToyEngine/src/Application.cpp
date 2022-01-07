@@ -3,6 +3,8 @@
 #include "Application.h"
 #include "Light.h"
 
+static Light light;
+
 Application::Application()
 {
     // Create a window with a rendering context attached
@@ -21,14 +23,12 @@ Application::Application()
     // ImGui user interface
     m_UserInterface->init(*m_Window);
 
-
     printSystemInfo();
 
     // Mesh test
     m_Camera = Camera("DefaultCam", m_Window.get(), ViewFrustum(45.0f, (float)m_Window->width(), (float)m_Window->height(), 0.1f, 100.0f), glm::vec3(0.0f, 0.0f, 5.0f));
     m_Shader            .build("./data/shaders/vertex.glsl", "./data/shaders/CookTorrance.glsl");
     m_InfiniteGridShader.build("./data/shaders/VS_InfiniteGrid.glsl", "./data/shaders/FS_InfiniteGrid.glsl");
-
 
 
     // glTF
@@ -49,7 +49,6 @@ void Application::run()
         {
             glfwPollEvents();
             update(getDeltaTime());
-
             render();
         }
         else
@@ -64,22 +63,29 @@ void Application::render()
     m_glRenderer->clear();
 
     {
-        // Render geometry
-        m_Shader.use();
+        // Prepare user interface
+        m_UserInterface->beginFrame(light);
 
-        m_Shader.setMat4("model", glm::identity<glm::mat4>() * glm::scale(glm::vec3(10, 10, 10)));
-        m_Shader.setMat4("view", m_Camera.getViewMat());
-        m_Shader.setMat4("projection", m_Camera.getProjectionMat());
+        {
+            // Render geometry
+            m_Shader.use();
 
-        m_Shader.setFloat3("cameraPos", m_Camera.pos());
-        model.draw(m_Shader);
-    }
+            m_Shader.setMat4("model", glm::identity<glm::mat4>() * glm::scale(glm::vec3(10, 10, 10)));
+            m_Shader.setMat4("view", m_Camera.getViewMat());
+            m_Shader.setMat4("projection", m_Camera.getProjectionMat());
 
-    {
+            m_Shader.setFloat3("cameraPos", m_Camera.pos());
+            m_Shader.setFloat3("lightPos",  light.pos());
+            m_Shader.setFloat4("lightColor",  light.color());
+            
+            m_Shader.setFloat("lightRadius",((PointLight&)light).radius());
+            
+            model.draw(m_Shader);
+        }
+    
         // Render user interface
         m_UserInterface->render();
     }
-
 
     m_Window->swapBuffers();
 }

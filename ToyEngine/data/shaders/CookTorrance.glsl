@@ -8,10 +8,12 @@ in mat4 viewMat;
 
 in vec3 p; 
 in vec3 n; 
+in vec3 t; 
+in vec3 b; 
 in vec2 texcoord[2];
 
 // Uniforms
-uniform vec3 camPos;
+uniform vec3 cameraPos;
 
 // Textures
 uniform sampler2D baseColorTexture;
@@ -59,22 +61,22 @@ float G(float alpha, float cosTheta, float cosThetaO)
     // Contributes to normalizing the microfacet distribution to guarantee energy conservation 
 
     // Remapping
-    alpha = (alpha + 1.0) / 2.0;
+//    alpha = (alpha + 1.0) / 2.0;
+//
+//    float k = ((alpha + 1) * (alpha + 1))/8;
+//
+//    float G1  = cosTheta / (cosTheta * (1 - k) + k); // Light direction
+//    float G1o = cosThetaO / (cosThetaO * (1 - k) + k); // View direction
+//
+//    return G1 * G1o;
 
-    float k = ((alpha + 1) * (alpha + 1))/8;
+    float tan2_theta_o= 1 / (cosThetaO*cosThetaO) - 1;
+    float lambda_o= 1 + alpha*alpha * tan2_theta_o;
+    float tan2_theta= 1 / (cosTheta*cosTheta) - 1;
+    float lambda= 1 + alpha*alpha * tan2_theta;
+    float G2= 2 / (sqrt(lambda_o) + sqrt(lambda));
 
-    float G1  = cosTheta / (cosTheta * (1 - k) + k); // Light direction
-    float G1o = cosThetaO / (cosThetaO * (1 - k) + k); // View direction
-
-    return G1 * G1o;
-
-//    float tan2_theta_o= 1 / (cosThetaO*cosThetaO) - 1;
-//    float lambda_o= 1 + alpha*alpha * tan2_theta_o;
-//    float tan2_theta= 1 / (cosTheta*cosTheta) - 1;
-//    float lambda= 1 + alpha*alpha * tan2_theta;
-//    float G2= 2 / (sqrt(lambda_o) + sqrt(lambda));
-
-//    return G2;
+    return G2;
 }
 
 float F(float cosThetaOH, float n2)
@@ -91,8 +93,9 @@ float F(float cosThetaOH, float n2)
 // Types of light casters
 struct PointLight
 {
-    vec3 pos;
-    vec3 color;
+    vec3  pos;
+    vec3  color;
+    float radius;
 };
 
 struct DirectionalLight
@@ -102,42 +105,72 @@ struct DirectionalLight
 };
 
 
+// TODO : Remove 
+uniform float lightRadius;
+uniform vec3  lightPos;
+uniform vec4  lightColor;
+
 void main()
 {
-    // Normal
-    vec3 nn = normalize(n);  // surface normal
+    vec3 N   = normalize(n); 
+    vec3 B   = normalize(b);
+    vec3 T   = normalize(cross(B, N));
+
+    mat3 tbn = mat3(T, B, N);
 
     // Colors
-    vec4 diffuse  = texture(baseColorTexture, texcoord[currentBaseColorTexcoord]);
-    vec4 emissive = texture(emissiveTexture, texcoord[0]);
-    vec4 normal   = texture(normalTexture, texcoord[currentNormalTexcoord]);
+    vec4 diffuse           = texture(baseColorTexture, texcoord[currentBaseColorTexcoord]);
+    if(diffuse.a < 0.8) discard;
+    
     vec4 roughnessMetallic = texture(metallicRoughnessTexture, texcoord[currentMetallicRoughnessTexcoord]);
+    vec4 emissive          = texture(emissiveTexture,          texcoord[0]);
+    vec4 normal            = texture(normalTexture,            texcoord[currentNormalTexcoord]); // tangeant space normalTexture
+
+    N = normal.xyz * 2 - 1;
+    N = normalize(tbn * N);
 
     // Metallic + roughness
-    float r = roughnessMetallic.y ; 
+    float r = roughnessMetallic.y; 
     float m = roughnessMetallic.z; 
 
     DirectionalLight dl;
-    dl.color     = vec3(1,1,1);
-    dl.direction = vec3(0.5,-1, 0.5);
+    dl.color     = vec3(1,1,1) ;
+    dl.direction = vec3(-0.5, -0.5, -1);
+
+    PointLight pl;
+    pl.color     = vec3(lightColor);
+    pl.pos       = (modelMat * vec4(lightPos, 1.0)).xyz;
+    pl.radius    = lightRadius;
+
+    // Point light attenuation
+    vec3 L            = pl.pos - p;
+    float attenuation = 1 / (pow(length(L), 2) + pow(pl.radius, 2) / 2);
 
     // Directions
-    vec3 o  = normalize(camPos - p); // view direction 
-    vec3 l  = normalize(-dl.direction);
-    vec3 h  = normalize(o+l);
+    vec3 camPos = vec3(modelMat * vec4(cameraPos, 1));
+    vec3 o      = normalize(-p); // view direction 
+    vec3 l      = normalize(L);
+    vec3 h      = normalize(o+l);
     
-    float cosTheta    = max(0, dot(nn, l));
-    float cosTheta_h  = max(0, dot(nn, h));
-    float cosTheta_o  = max(0, dot(nn, o));
+    float cosTheta    = max(0, dot(N, l));
+    float cosTheta_h  = max(0, dot(N, h));  // specular intensity
+    float cosTheta_o  = max(0, dot(N, o));
     float cosTheta_oh = max(0, dot(o, h));
 
     // Cook-Torrance BRDF
-    float fr = (D(r, cosTheta_h) * F(cosTheta_oh, 0.04 ) * G(r, cosTheta, cosTheta_o)) / (4 * cosTheta * cosTheta_o);
-    vec3 color = fr * dl.color * cosTheta;
+    float fr   = (D(r, cosTheta_h) * F(cosTheta_oh, 0.1) * G(r, cosTheta, cosTheta_o)) / (4 * cosTheta * cosTheta_o);
+    float frLambert    = 1.0 / M_PI;
+    float shininess    = roughnessMetallic.y;
 
-    if(diffuse.a <= 0.4) discard;
+    float frBlinnPhong = ((shininess + 8) / (8*M_PI)) * pow(cosTheta_h, shininess);
 
-    fragment_color = vec4(color, 1) * diffuse;
+    vec3 diffuseColor  = fr * pl.color * cosTheta * attenuation;
+    
+    vec4 color = vec4(diffuseColor, 1) * diffuse;
+         color = color / (1.0f + color);
+
+    fragment_color = color ;
+//    fragment_color = lightColor ;
 }
 
 

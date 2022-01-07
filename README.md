@@ -14,7 +14,7 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 - [x] Free Camera
 - [x] Keyboard/Mouse events handling
 - [x] GLSL shader loading/hot-reloading 
-- [ ] ImGui 
+- [-] ImGui 
 
 ###  Model loading
 - [x] Custom glTF 2.0 model loader (loading materials, textures, transforms)
@@ -22,9 +22,9 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 ### Lighting 
 - [x] Lambert BRDF
 - [x] Blinn-Phong BRDF
-- [x] Microfacet BRDF [Cook-Torrance '81]
+- [x] Microfacet BRDF (Cook-Torrance)
 - [x] Point lights, directional lights
-- [ ] Normal mapping
+- [x] Normal mapping
 - [ ] Shadow mapping 
 
 ### Rendering methods

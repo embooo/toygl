@@ -14,7 +14,7 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 - [x] Free Camera
 - [x] Keyboard/Mouse events handling
 - [x] GLSL shader loading/hot-reloading 
-- [-] ImGui 
+- [] ImGui 
 
 ###  Model loading
 - [x] Custom glTF 2.0 model loader (loading materials, textures, transforms)

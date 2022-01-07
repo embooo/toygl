@@ -25,7 +25,7 @@ void UserInterface::init(const Window& window)
     ImGui_ImplOpenGL3_Init(glsl_version);
 }
 
-void UserInterface::beginFrame(Light& light)
+void UserInterface::beginFrame(Light& light, const Camera& camera,  OpenGLRenderer& renderer)
 {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -54,7 +54,15 @@ void UserInterface::beginFrame(Light& light)
         ImGui::SameLine();
         ImGui::Text("counter = %d", counter);
 
+        ImGui::Text("Num. draw calls  %d", renderer.statistics.numDrawCalls);
+        ImGui::Text("Num. indices  %d",    renderer.statistics.numIndices);
+        ImGui::Text("Num. vertices  %d",   renderer.statistics.numVertices);
+
+        const float* pos = glm::value_ptr(camera.getPos());
+        ImGui::Text("Camera world position %.1f %.1f %.1f", pos[0], pos[1], pos[2]);
+
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
         ImGui::End();
     }
 
@@ -67,6 +75,10 @@ void UserInterface::beginFrame(Light& light)
         ImGui::InputFloat4("Light Position", glm::value_ptr(light.pos()), "%.2f");
         ImGui::ColorEdit4("Light Color", glm::value_ptr(light.color()));
         ImGui::DragFloat("Light Radius", &((PointLight&)light).radius(), 0.01f, 0.0f, 100.0f);
+
+
+        ImGui::DragFloat3("Translation", glm::value_ptr(renderer.translation), 1.0f, FLT_MIN, FLT_MAX);
+        ImGui::DragFloat3("Scale", glm::value_ptr(renderer.scale), 1.0f, FLT_MIN, FLT_MAX);
 
         if (ImGui::Button("Close"))
             show_another_window = false;

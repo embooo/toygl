@@ -5,13 +5,16 @@
 
 #Visual Studio
 .vs
+*.pdb
+*.filters
+*.vcxproj
+*.vcxproj.user
+.sln
 
 ## ToyGL specific 
 build
 obj
 **/bin/Debug*
 ToyEngine/*.vcxproj.*
-.sln
-*.vcxproj
-*.filters
-ToyEngine/thirdparty/GLFW/GLFW.vcxproj.user
+*.lib
+ToyEngine/imgui.ini

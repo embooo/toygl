@@ -9,7 +9,6 @@ Application::Application()
 {
     // Create a window with a rendering context attached
     m_Window        = std::make_unique<Window>("ToyGL", 2560, 1080, 4, 3);
-    m_UserInterface = std::make_unique<UserInterface>();
 
     // Render commands handler
     m_glRenderer = std::make_unique<OpenGLRenderer>();
@@ -17,26 +16,20 @@ Application::Application()
 
     // Register to observer list to get updated when events occur
     m_Window->attach(this);
-    m_Window->attach(&m_Camera);
-    m_Window->attach(m_UserInterface.get());
-
-    // ImGui user interface
-    m_UserInterface->init(*m_Window);
 
     printSystemInfo();
 
     // Mesh test
-    m_Camera = Camera("DefaultCam", m_Window.get(), ViewFrustum(45.0f, (float)m_Window->width(), (float)m_Window->height(), 0.1f, 100.0f), glm::vec3(0.0f, 0.0f, 5.0f));
+    m_Camera = Camera(m_Window.get(), "Default", ViewFrustum(45.0f, (float)m_Window->width(), (float)m_Window->height(), 0.1f, 100.0f));
     m_Shader            .build("./data/shaders/vertex.glsl", "./data/shaders/CookTorrance.glsl");
     m_InfiniteGridShader.build("./data/shaders/VS_InfiniteGrid.glsl", "./data/shaders/FS_InfiniteGrid.glsl");
 
 
     // glTF
-    //model.loadFromFile("./data/models/sponza-pbr/scene.glb");
-    model.loadFromFile("./data/models/duck/scene.gltf");
+    model.loadFromFile("./data/models/sponza-pbr/scene.glb");
+    //model.loadFromFile("./data/models/duck/scene.gltf");
     //model.loadFromFile("./data/models/bistro/scene.glb");
     //model.loadFromFile("./data/models/sphere/scene.gltf");
-    m_Camera.lookAt(model.bbox.min, model.bbox.max);
 
     m_lastFrameTime = (float)glfwGetTime();
 
@@ -65,15 +58,14 @@ void Application::render()
     m_glRenderer->clear();
     {
         // Prepare user interface
-        m_UserInterface->beginFrame(light, m_Camera , *m_glRenderer);
-
+        m_Window->getUI().beginFrame(light, m_Camera, *m_glRenderer);
         {
             // Render geometry
             m_glRenderer->render(model, m_Shader, m_Camera, light);
         }
     
         // Render user interface
-        m_UserInterface->render();
+        m_Window->getUI().render();
     }
 
     m_Window->swapBuffers();
@@ -86,19 +78,51 @@ void Application::update(float deltaTime)
 
 void Application::onUpdate(Event& event)
 {
+
+    if (m_Window->getUI().wantCaptureKeyboard() || m_Window->getUI().wantCaptureMouse())
+    {
+        m_Camera.DisableRotation();
+    }
+
     switch(event.getType())
     {
         case EventType::WindowResize:
-            onWindowResize(static_cast<WindowResizeEvent&>(event)); 
-            break;
+            onWindowResize(static_cast<WindowResizeEvent&>(event));
+        break;
 
         case EventType::WindowMinimize:
             onWindowMinimize(static_cast<WindowMinimizeEvent&>(event));
-            break;
+        break;
 
+        // Keyboard events
         case EventType::KeyPressed:
-            onKeyPressed(static_cast<KeyEvent&>(event));
-            break;
+        {
+            KeyEvent& ev = static_cast<KeyEvent&>(event);
+            onKeyPressed(ev);
+            m_Camera.onKeyPressed(ev);
+        }
+        break;
+
+        case EventType::KeyReleased:
+            m_Camera.onKeyReleased(static_cast<KeyEvent&>(event));
+        break;
+
+        // Mouse events
+        case EventType::MouseMove:
+            m_Camera.onMouseMove(static_cast<MouseMove&>(event));
+        break;
+        
+        case EventType::MouseScroll:
+            m_Camera.onMouseScroll(static_cast<MouseScroll&>(event));
+        break;
+
+        case EventType::MouseButtonPressed:
+            m_Camera.onMouseClickEvent(static_cast<MouseClick&>(event));
+        break;
+
+        case EventType::MouseButtonReleased:
+            m_Camera.onMouseClickEvent(static_cast<MouseClick&>(event));
+        break;
     }
 }
 

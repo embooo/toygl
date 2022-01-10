@@ -6,7 +6,6 @@
 #include "KeyboardEvent.h"
 #include "MouseEvent.h"
 #include "IObserver.h"
-#include "Window.h"
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -14,22 +13,49 @@
 #include "glm/gtx/rotate_vector.hpp"
 #include "glm/gtx/vector_angle.hpp"
 
+class Window;
+
+struct Matrices
+{
+    glm::mat4 view;
+    glm::mat4 projection;
+};
+
+struct CamVectors
+{
+    glm::vec3 pos; // Default position of the camera - apex of the view frustum
+    glm::vec3 front;    // LookAt direction aka target
+    glm::vec3 up;       // Normalized vector - camera's up axis
+    glm::vec3 right;
+};
+
+struct State
+{
+    float pitch;
+    float yaw;
+    int   currentMove;
+    float moveSpeed;
+    float rotSpeed;
+    float hSens;
+    float vSens;
+};
+
 struct ViewFrustum
 {
     ViewFrustum()
-        : fieldOfView(45.0f), windowWidth(1280), windowHeight(720), aspectRatio(16.0f/9.0f), zNear(0.1f), zFar(100.0f) {};
+        : fov(45.0f), windowWidth(1280), windowHeight(720), aspect(16.0f/9.0f), znear(0.1f), zfar(100.0f) {};
     ViewFrustum(float fov, float width, float height, float zNear = 0.1f, float zFar = 100.0f)
-        : fieldOfView(fov), windowWidth(width), windowHeight(height), aspectRatio(width/height), zNear(zNear), zFar(zFar) {};
+        : fov(fov), windowWidth(width), windowHeight(height), aspect(width/height), znear(zNear), zfar(zFar) {};
 
     // Data to build a projection matrix 
     // Angle (in radians) between the side or top/bottom planes of the frustum
-    float fieldOfView;  
+    float fov;  
     // Aspect ratio of the viewing window
-    float aspectRatio;
+    float aspect;
     // Near depth limit - Distance in the Z-axis between the camera and near plane
-    float zNear; 
+    float znear; 
     // Far depth limit - Distance in the Z-axis between the camera and far plane
-    float zFar;  
+    float zfar;  
 
     float windowWidth, windowHeight;
 };
@@ -52,25 +78,30 @@ class Camera : public IObserver
 {
 public:
     Camera();
-    Camera(const std::string& name, Window* window, const ViewFrustum& frustum,
-    const glm::vec3& pos = glm::vec3(0.0f, 0.0f, 0.0f),
-    const glm::vec3& target = glm::vec3(0.0f, 0.0f, -1.0f),
-    const glm::vec3& up  = glm::vec3(0.0f, 1.0f, 0.0f) );
-
-    const glm::mat4& getViewMat() const;
-    const glm::mat4& getProjectionMat() const;
-    const glm::vec3& getPos() const;
-
-    void move(const glm::vec3& dir, float deltaTime);
-    void rotate(float deltaTime);
-    void lookAt(const glm::vec3& a, const glm::vec3& b);
+    Camera(Window* window,
+           const std::string& name, 
+           const ViewFrustum& frustum,
+           const glm::vec3&   pos    = { 0.0f, 0.0f,  0.0f },
+           const glm::vec3&   front  = { 0.0f, 0.0f, -1.0f },
+           const glm::vec3&   up     = { 0.0f, 1.0f,  0.0f }
+    );
 
     virtual void onUpdate(Event& event) override;
     void update(const float dt = 0.1f);
 
-    void updateAspectRatio(float aspectRatio);
+    // Getters
+    const glm::mat4& viewMat() const;
+    const glm::mat4& projMat() const;
+    const glm::vec3& pos()     const;
+    glm::vec3& pos();
 
-    glm::vec3& pos() { return position; }
+    // Navigation
+    void move(const glm::vec3& dir, float deltaTime);
+    void rotate(float deltaTime);
+
+    // Setters
+    void DisableRotation() { IsRotating = false; }
+    void updateAspectRatio(float aspectRatio);
 
     // Mouse/Keyboard events handler
     virtual void onKeyPressed(KeyEvent& event);
@@ -80,41 +111,28 @@ public:
     virtual void onMouseScroll(MouseScroll& event);
     
 private:
-    Window* m_WindowHandle;
-    std::string name;
-    
-    ViewFrustum viewFrustum; 
-    
-    // Matrices 
-    glm::mat4 view;
-    glm::mat4 projection;
-    
-    // Vectors 
-    glm::vec3 position; // Default position of the camera - apex of the view frustum
-    glm::vec3 front;    // LookAt direction aka target
-    glm::vec3 up;       // Normalized vector - camera's up axis
-    glm::vec3 right;
+    Window*     m_WindowHandle;
+    std::string m_Name;
+    ViewFrustum m_VF; 
+    CamVectors  m_CamVecs;
+    Matrices    m_CamMats;
+    State m_State;
 
-    void updateViewMatrix();
-    void updateProjMatrix();
+    void updateViewMat();
+    void updateProjMat();
 
-    // Applies a translation to the camera's center. Not used during updates.
-    void translate(glm::vec3& tvec);
+    inline static float m_deltaTime;
 
-    float m_MoveSpeed;
-    float m_LookSpeed;
+    enum class MoveStates
+    {
+        NONE      = 0,
+        MoveUp    = 1,
+        MoveDown  = 2,
+        MoveFront = 4,
+        MoveBack  = 8,
+        MoveLeft  = 16,
+        MoveRight = 32
+    };
 
-    // Length between the observed point and the camera's center
-    float m_Distance;
-
-    float rotYawAmount = 0.0f, rotPitchAmount = 0.0f;
-    float horizontalSensitivity = 0.1f, verticalSensitivity = 0.1f;
-
-    float m_deltaTime;
-    float pitch = 0.0f;
-    float yaw   = -90.0f;
-    bool  firstClick  = true;
-    bool  bMouseMoved = false;
-    bool  bMoveUp = false, bMoveDown = false, bMoveFront =false, bMoveBack = false, bMoveLeft = false, bMoveRight = false;
-    bool  lookAroundState = false;
+    bool  IsRotating = false;
 };

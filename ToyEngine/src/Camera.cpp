@@ -1,37 +1,49 @@
 #include "Camera.h"
+#include "Window.h"
 
 Camera::Camera()
-    : name("DefaultCamera"), 
-    viewFrustum(ViewFrustum()), 
-    position(glm::vec3(0.0f,0.0f, 5.0f)), front(glm::vec3(0.0f, 0.0f, -1.0f)), up(glm::vec3(0.0f, 1.0f, 0.0f)), 
-    view(glm::lookAt(position, position + front, up)),
-    projection(glm::perspective(viewFrustum.fieldOfView, viewFrustum.aspectRatio, viewFrustum.zNear, viewFrustum.zFar)), 
-    m_MoveSpeed(2.0f), m_LookSpeed (0.25f), m_Distance(1.0f)
+        
+    : m_WindowHandle(nullptr),
+      m_Name("DefaultCamera"), 
+      m_VF(ViewFrustum()), 
+      m_CamVecs({ glm::vec3(0.0f,0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f) }),
+      m_CamMats({ glm::lookAt(m_CamVecs.pos, m_CamVecs.pos + m_CamVecs.front, m_CamVecs.up), 
+                  glm::perspective(m_VF.fov, m_VF.aspect, m_VF.znear, m_VF.zfar) }),
+      m_State({0.0f, -90.0f, 0, 2.0f, 0.25f, 0.1f, 0.1f })
 {
-    right = glm::normalize(glm::cross(front, up));
+    m_CamVecs.right = glm::normalize(glm::cross(m_CamVecs.front, m_CamVecs.up));
 }
 
-Camera::Camera(const std::string& name, Window* window, const ViewFrustum& frustum, const glm::vec3& pos, const glm::vec3& front, const glm::vec3& up)
-    : name(name), position(pos), front(glm::normalize(front)), up(glm::normalize(up)), viewFrustum(frustum), 
-    view(glm::lookAt(pos, glm::normalize(pos + front), up)), 
-    projection(glm::perspective(frustum.fieldOfView, frustum.aspectRatio, frustum.zNear, frustum.zFar)), m_MoveSpeed(2.0f),m_LookSpeed (0.25f), m_WindowHandle(window), m_Distance(1.0f)
+Camera::Camera(Window* win, const std::string& name, const ViewFrustum& vf, const glm::vec3& pos, const glm::vec3& front, const glm::vec3& up)
+    : m_WindowHandle(win),
+      m_Name(name), 
+      m_VF(vf), 
+      m_CamVecs({ pos, front, up }),
+      m_CamMats({ glm::lookAt(m_CamVecs.pos, m_CamVecs.pos + m_CamVecs.front, m_CamVecs.up),
+                  glm::perspective(vf.fov, vf.aspect, vf.znear, vf.zfar) }),
+    m_State({0.0f, -90.0f, 0, 2.0f, 0.25f, 0.1f, 0.1f })
 {
-    right = glm::cross(front, up);
+    m_CamVecs.right = glm::normalize(glm::cross(front,up));
 }
 
-const glm::mat4& Camera::getViewMat() const
+const glm::mat4& Camera::viewMat() const
 {
-    return view;
+    return m_CamMats.view;
 }
 
-const glm::mat4& Camera::getProjectionMat() const
+const glm::mat4& Camera::projMat() const
 {
-    return projection;
+    return m_CamMats.projection;
 }
 
-const glm::vec3& Camera::getPos() const
+const glm::vec3& Camera::pos() const
 {
-    return position;
+    return m_CamVecs.pos;
+}
+
+glm::vec3& Camera::pos()
+{
+    return m_CamVecs.pos;
 }
 
 
@@ -65,34 +77,45 @@ void Camera::update(float deltaTime)
 {
     m_deltaTime = deltaTime;
 
-    if (bMoveUp)    move( up,    deltaTime);
-    if (bMoveDown)  move(-up,    deltaTime);
+    if ((m_State.currentMove & (int)MoveStates::MoveUp)   == (int)MoveStates::MoveUp)    
+        move( m_CamVecs.up, deltaTime);
 
-    if (bMoveFront) move( front, deltaTime);
-    if (bMoveBack)  move(-front, deltaTime);
+    if ((m_State.currentMove & (int)MoveStates::MoveDown) == (int)MoveStates::MoveDown)
+        move(-m_CamVecs.up, deltaTime);
 
-    if (bMoveRight) move( right, deltaTime);
-    if (bMoveLeft)  move(-right, deltaTime);
+    if ((m_State.currentMove & (int)MoveStates::MoveFront) == (int)MoveStates::MoveFront)
+        move(m_CamVecs.front, deltaTime);
+
+    if ((m_State.currentMove & (int)MoveStates::MoveBack) == (int)MoveStates::MoveBack)
+        move(-m_CamVecs.front, deltaTime);
+
+    if ((m_State.currentMove & (int)MoveStates::MoveRight) == (int)MoveStates::MoveRight)
+        move(m_CamVecs.right, deltaTime);
+
+    if ((m_State.currentMove & (int)MoveStates::MoveLeft) == (int)MoveStates::MoveLeft)
+        move(-m_CamVecs.right, deltaTime);
+
 }
 
 void Camera::onKeyPressed(KeyEvent& event)
 {
     switch (event.m_Key)
     {
-        case GLFW_KEY_SPACE :       bMoveUp      = true; break;
-        case GLFW_KEY_LEFT_SHIFT :  m_MoveSpeed *= 2.0f; break;
+        
+        case GLFW_KEY_SPACE :       m_State.currentMove |= (int)MoveStates::MoveUp;    break;
+        case GLFW_KEY_LEFT_SHIFT :  m_State.moveSpeed   *= 2.0f;                       break;
                                                          
-        case GLFW_KEY_UP:           bMoveFront   = true; break;
-        case GLFW_KEY_W:            bMoveFront   = true; break;
+        case GLFW_KEY_UP:           m_State.currentMove |= (int)MoveStates::MoveFront; break;
+        case GLFW_KEY_W:            m_State.currentMove |= (int)MoveStates::MoveFront; break;
                                                          
-        case GLFW_KEY_DOWN:         bMoveBack    = true; break;
-        case GLFW_KEY_S:            bMoveBack    = true; break;
+        case GLFW_KEY_DOWN:         m_State.currentMove |= (int)MoveStates::MoveBack;  break;
+        case GLFW_KEY_S:            m_State.currentMove |= (int)MoveStates::MoveBack;  break;
                                                          
-        case GLFW_KEY_LEFT:         bMoveLeft    = true; break;
-        case GLFW_KEY_A:            bMoveLeft    = true; break;
+        case GLFW_KEY_LEFT:         m_State.currentMove |= (int)MoveStates::MoveLeft;  break;
+        case GLFW_KEY_A:            m_State.currentMove |= (int)MoveStates::MoveLeft;  break;
                                                          
-        case GLFW_KEY_RIGHT:        bMoveRight   = true; break;
-        case GLFW_KEY_D:            bMoveRight   = true; break;
+        case GLFW_KEY_RIGHT:        m_State.currentMove |= (int)MoveStates::MoveRight; break;
+        case GLFW_KEY_D:            m_State.currentMove |= (int)MoveStates::MoveRight; break;
     }
 }
 
@@ -100,34 +123,33 @@ void Camera::onKeyReleased(KeyEvent& event)
 {
     switch (event.m_Key)
     {
-        case GLFW_KEY_SPACE:        bMoveUp     = false; break;
-        case GLFW_KEY_LEFT_SHIFT :  m_MoveSpeed = 2.0f;  break;
-
-        case GLFW_KEY_UP:           bMoveFront  = false; break;
-        case GLFW_KEY_W:            bMoveFront  = false; break;
-
-        case GLFW_KEY_DOWN:         bMoveBack   = false; break;
-        case GLFW_KEY_S:            bMoveBack   = false; break;
-
-        case GLFW_KEY_LEFT:         bMoveLeft   = false; break;
-        case GLFW_KEY_A:            bMoveLeft   = false; break;
-
-        case GLFW_KEY_RIGHT:        bMoveRight  = false; break;
-        case GLFW_KEY_D:            bMoveRight  = false; break;
+        case GLFW_KEY_SPACE :       m_State.currentMove &= ~(int)MoveStates::MoveUp;    break;
+        case GLFW_KEY_LEFT_SHIFT :  m_State.moveSpeed    = 2.0f;                        break;
+                                                            
+        case GLFW_KEY_UP:           m_State.currentMove &= ~(int)MoveStates::MoveFront; break;
+        case GLFW_KEY_W:            m_State.currentMove &= ~(int)MoveStates::MoveFront; break;
+                                                         
+        case GLFW_KEY_DOWN:         m_State.currentMove &= ~(int)MoveStates::MoveBack;  break;
+        case GLFW_KEY_S:            m_State.currentMove &= ~(int)MoveStates::MoveBack;  break;
+                                                        
+        case GLFW_KEY_LEFT:         m_State.currentMove &= ~(int)MoveStates::MoveLeft;  break;
+        case GLFW_KEY_A:            m_State.currentMove &= ~(int)MoveStates::MoveLeft;  break;
+                                                        
+        case GLFW_KEY_RIGHT:        m_State.currentMove &= ~(int)MoveStates::MoveRight; break;
+        case GLFW_KEY_D:            m_State.currentMove &= ~(int)MoveStates::MoveRight; break;
     }
 }
 
 void Camera::onMouseClickEvent(MouseClick& event)
 {
-    
     if(event.m_Button == GLFW_MOUSE_BUTTON_LEFT && event.m_Action == GLFW_PRESS )
     {
-        lookAroundState = true;
+        IsRotating = true;
         m_WindowHandle->setCursorVisibility(false);
     }
     else if(event.m_Button == GLFW_MOUSE_BUTTON_LEFT && event.m_Action == GLFW_RELEASE)
     {
-        lookAroundState = false;
+        IsRotating = false;
         m_WindowHandle->setCursorVisibility(true);
     }
 }
@@ -138,12 +160,12 @@ void Camera::onMouseMove(MouseMove& event)
 
     Mouse::Delta = current - Mouse::LastPos;
 
-    if(lookAroundState && Mouse::Delta != glm::vec2(0.0f))
+    if(IsRotating && Mouse::Delta != glm::vec2(0.0f))
     {
-        yaw   +=  Mouse::Delta.x * 0.3f ;
-        pitch -=  Mouse::Delta.y * 0.3f ;
+        m_State.yaw   +=  Mouse::Delta.x * 0.3f ;
+        m_State.pitch -=  Mouse::Delta.y * 0.3f ;
 
-        pitch = glm::clamp<float>(pitch, -89.0, 89.0);
+        m_State.pitch = glm::clamp<float>(m_State.pitch, -89.0, 89.0);
 
         rotate(m_deltaTime);
     }
@@ -153,59 +175,42 @@ void Camera::onMouseMove(MouseMove& event)
 
 void Camera::onMouseScroll(MouseScroll& event)
 {
-    move(front * (float)event.getYOffset() * m_MoveSpeed, m_deltaTime);
+    move(m_CamVecs.front * (float)event.getYOffset() * m_State.moveSpeed, m_deltaTime);
 }
 
 void Camera::move(const glm::vec3& dir, float deltaTime)
 {
     // Update camera's vectors
-    right       = glm::normalize(glm::cross(front, up));
-    position   += dir * m_MoveSpeed * deltaTime;
+    m_CamVecs.right       = glm::normalize(glm::cross(m_CamVecs.front, m_CamVecs.up));
+    m_CamVecs.pos   += dir * m_State.moveSpeed * deltaTime;
     
     // Update view matrix
-    view = glm::lookAt(position, position + front, up);
+    m_CamMats.view = glm::lookAt(m_CamVecs.pos, m_CamVecs.pos + m_CamVecs.front, m_CamVecs.up);
 }
 
-void Camera::updateViewMatrix()
+void Camera::updateViewMat()
 {
-    view = glm::lookAt(position, position + front, up);
+    m_CamMats.view = glm::lookAt(m_CamVecs.pos, m_CamVecs.pos + m_CamVecs.front, m_CamVecs.up);
 }
 
-void Camera::updateProjMatrix()
+void Camera::updateProjMat()
 {
-    projection = glm::perspective(viewFrustum.fieldOfView, viewFrustum.aspectRatio, viewFrustum.zNear, viewFrustum.zFar);
+    m_CamMats.projection = glm::perspective(m_VF.fov, m_VF.aspect, m_VF.znear, m_VF.zfar);
 }
 
 void Camera::updateAspectRatio(float aspectRatio)
 {
-    viewFrustum.aspectRatio = aspectRatio;
-}
-
-void Camera::translate(glm::vec3& tvec)
-{
-    position += m_Distance * tvec;
+    m_VF.aspect = aspectRatio;
 }
     
 void Camera::rotate(float deltaTime)
 {
-    front.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-    front.y = glm::sin(glm::radians(pitch));
-    front.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+    m_CamVecs.front = { glm::cos(glm::radians(m_State.yaw)) * glm::cos(glm::radians(m_State.pitch)),
+                        glm::sin(glm::radians(m_State.pitch)),
+                        glm::sin(glm::radians(m_State.yaw))* glm::cos(glm::radians(m_State.pitch)) };
 
-    front = glm::normalize(front);
+    m_CamVecs.front = glm::normalize(m_CamVecs.front);
 
-    updateViewMatrix();
+    updateViewMat();
 }
 
-void Camera::lookAt(const glm::vec3& a, const glm::vec3& b)
-{
-    glm::vec3 center = (a + b) * 0.5f;
-    //m_Distance = glm::distance(a, b);
-    //position   = glm::vec3(0.0f);
-    //front      = glm::vec3(center.x, front.y, center.y);
-
-    viewFrustum.zFar  = b.z;
-
-    updateProjMatrix();
-    updateViewMatrix();
-}

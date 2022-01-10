@@ -5,13 +5,12 @@
 #include "OpenGLRenderer.h"
 #include "UserInterface.h"
 #include "IObserver.h"
+#include "Window.h"
 
 // TODO : remove
 #include "Mesh.h"
 #include "Shader.h"
 #include "Camera.h"
-
-
 
 class Application : public IObserver
 {
@@ -38,7 +37,6 @@ private:
     Shader m_Shader, m_InfiniteGridShader;
     float m_lastFrameTime;
 
-    std::unique_ptr<UserInterface> m_UserInterface;
     std::unique_ptr<Window> m_Window;
     std::unique_ptr<OpenGLRenderer> m_glRenderer;
 };

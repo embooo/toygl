@@ -1,5 +1,3 @@
-#pragma once
-
 #include "OpenGLRenderer.h"
 
 OpenGLRenderer::OpenGLRenderer()
@@ -29,9 +27,9 @@ void OpenGLRenderer::render(gltf::Model& model, Shader& program, Camera& camera,
 
     statistics.reset();
     
-    //program.setMat4("model", );
-    program.setMat4("view",  camera.getViewMat());
-    program.setMat4("projection", camera.getProjectionMat());
+    //program.setMat4("model",      glm::translate(glm::identity<glm::mat4>(), translation));
+    program.setMat4("view",       camera.viewMat());
+    program.setMat4("projection", camera.projMat());
 
     program.setFloat3("cameraPos",  camera.pos());
     program.setFloat3("lightPos",   light.pos());

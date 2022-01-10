@@ -8,7 +8,6 @@
 #include "Camera.h"
 #include "Light.h"
 
-#include <Window.h>
 
 class OpenGLRenderer
 {
@@ -35,7 +34,7 @@ public:
     RenderStats statistics;
 
     // todo : remove 
-    glm::vec3 translation, scale;
+    glm::vec3 translation = glm::vec3(0.0f), scale = glm::vec3(1.0f);
 private:
     glm::vec4 clearColor;
 

@@ -126,8 +126,8 @@ void main()
     vec4 emissive          = texture(emissiveTexture,          texcoord[0]);
     vec4 normal            = texture(normalTexture,            texcoord[currentNormalTexcoord]); // tangeant space normalTexture
 
-    N = normal.xyz * 2 - 1;
-    N = normalize(tbn * N);
+//    N = normal.xyz * 2 - 1;
+//    N = normalize(tbn * N);
 
     // Metallic + roughness
     float r = roughnessMetallic.y; 
@@ -159,12 +159,14 @@ void main()
 
     // Cook-Torrance BRDF
     float fr   = (D(r, cosTheta_h) * F(cosTheta_oh, 0.1) * G(r, cosTheta, cosTheta_o)) / (4 * cosTheta * cosTheta_o);
-    float frLambert    = 1.0 / M_PI;
+
+
+    vec4 frLambert    = diffuse / M_PI;
     float shininess    = roughnessMetallic.y;
 
     float frBlinnPhong = ((shininess + 8) / (8*M_PI)) * pow(cosTheta_h, shininess);
 
-    vec3 diffuseColor  = fr * pl.color * cosTheta * attenuation;
+    vec3 diffuseColor  = frLambert.rgb * pl.color * cosTheta * attenuation;
     
     vec4 color = vec4(diffuseColor, 1) * diffuse;
          color = color / (1.0f + color);

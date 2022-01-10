@@ -90,6 +90,10 @@ void Window::init()
         static_cast<Window*>(glfwGetWindowUserPointer(window))->notify(WindowCloseEvent());
     });
 
+
+    // User interface
+    m_UserInterface.init(*this);
+
 }
 
 void Window::swapBuffers()
@@ -110,10 +114,10 @@ GLFWwindow* Window::getRawPtr() const
 
 void Window::notify(Event& event)
 {
-    for(IObserver* observer : m_Observers)
-    {
-        observer->onUpdate(event);
-    }
+	for (IObserver* observer : m_Observers)
+	{
+		observer->onUpdate(event);
+	}
 }
 
 void Window::setCursorVisibility(bool visible)
@@ -145,6 +149,11 @@ int Window::height()
 int Window::width()
 {
     return m_Props.getWidth();
+}
+
+UserInterface& Window::getUI()
+{
+    return m_UserInterface;
 }
 
 void Window::update()

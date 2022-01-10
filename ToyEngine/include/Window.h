@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <vector>
 #include <GLFW/glfw3.h>
@@ -10,6 +11,7 @@
 #include "WindowEvent.h"
 #include "ISubject.h"
 #include "IObserver.h"
+#include "UserInterface.h"
 
 // Creates a GLFW window containing an OpengGL graphics context
 
@@ -39,9 +41,11 @@ public:
     // Getters & setters
     int height();
     int width();
+    UserInterface& getUI();
 
 private:
     GLFWwindow* m_pWindow;
+    UserInterface m_UserInterface;
     std::vector<IObserver*> m_Observers;
 
 private:

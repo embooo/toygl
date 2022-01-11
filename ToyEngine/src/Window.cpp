@@ -2,14 +2,16 @@
 
 #include <iostream>
 #include <functional>
+
+// Note : VSync is enabled by default
 Window::Window()
-    : m_Props("DefaultWindow", 1280, 720, 3, 3)
+    : m_Props({ "DefaultWindow", 1280, 720, 4, 3, 1, true })
 {
     init();
 }
 
-Window::Window(const char* title, const int width, const int height, const int glMajor, const int glMinor)
-    : m_Props(title, width, height, glMajor, glMinor)
+Window::Window(const char* title, const int width, const int height, const int glMajor, const int glMinor, int swapInterval, bool vsync)
+    : m_Props({ title, width, height, glMajor, glMinor, swapInterval, vsync, } )
 {
     init();
 }
@@ -29,10 +31,10 @@ void Window::init()
     // Set error callback
     glfwSetErrorCallback(errorCallback);
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, m_Props.glContextProps().glMajor());
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, m_Props.glContextProps().glMinor());
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, m_Props.GLProps.major);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, m_Props.GLProps.minor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    m_pWindow = glfwCreateWindow(m_Props.getWidth(), m_Props.getHeight(), m_Props.title().c_str(), nullptr, nullptr);
+    m_pWindow = glfwCreateWindow(m_Props.width, m_Props.height, m_Props.title, nullptr, nullptr);
 
     if (!m_pWindow)
     {
@@ -75,8 +77,8 @@ void Window::init()
     glfwSetWindowSizeCallback(m_pWindow, [](GLFWwindow* window, int width, int height)
     {
         Window* win = static_cast<Window*>(glfwGetWindowUserPointer(window));
-        win->m_Props.setWidth(width);
-        win->m_Props.setHeight(height);
+        win->m_Props.width = width;
+        win->m_Props.height = height;
         win->notify( WindowResizeEvent(width, height) );
     });
 
@@ -98,7 +100,7 @@ void Window::init()
 
 void Window::swapBuffers()
 {
-    glfwSwapInterval(1); // Enable vsync
+    glfwSwapInterval(m_Props.swapInterval); // Enable vsync
     glfwSwapBuffers(m_pWindow);
 }
 
@@ -126,6 +128,11 @@ void Window::setCursorVisibility(bool visible)
     glfwSetInputMode(m_pWindow, GLFW_CURSOR, value);
 }
 
+bool Window::isVsyncActive() const
+{
+    return m_Props.vsyncEnabled;
+}
+
 void Window::attach(IObserver* observer)
 {
     m_Observers.push_back(observer);
@@ -143,12 +150,18 @@ void Window::detach(IObserver* observer)
 
 int Window::height()
 {
-    return m_Props.getHeight();
+    return m_Props.height;
 }
 
 int Window::width()
 {
-    return m_Props.getWidth();
+    return m_Props.width;
+}
+
+void Window::toggleVsync()
+{
+    m_Props.vsyncEnabled = !m_Props.vsyncEnabled;
+    m_Props.swapInterval = m_Props.vsyncEnabled ? 1 : 0;
 }
 
 UserInterface& Window::getUI()

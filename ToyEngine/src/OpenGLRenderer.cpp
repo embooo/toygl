@@ -37,7 +37,6 @@ void OpenGLRenderer::render(gltf::Model& model, Shader& program, Camera& camera,
 
     program.setFloat("lightRadius", ((PointLight&)light).radius());
 
-
     for (gltf::Node* node : model.nodes)
     {
         if (node->mesh)

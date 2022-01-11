@@ -11,7 +11,7 @@ void UserInterface::onUpdate(Event& event)
 {
 }
 
-void UserInterface::init(const Window& window)
+void UserInterface::init(Window& window)
 {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -23,6 +23,7 @@ void UserInterface::init(const Window& window)
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
+    m_pWindow = &window;
     ImGui_ImplGlfw_InitForOpenGL(window.getRawPtr(), true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 }
@@ -43,6 +44,11 @@ void UserInterface::beginFrame(Light& light, const Camera& camera,  OpenGLRender
 
         ImGui::Checkbox("Shader Parameters", &show_another_window);
 
+        if (ImGui::Checkbox("VSync", &enable_vsync))
+        {
+            m_pWindow->toggleVsync();
+        }
+        
         ImGui::Text("Num. draw calls  %d", renderer.statistics.numDrawCalls);
         ImGui::Text("Num. indices  %d", renderer.statistics.numIndices);
         ImGui::Text("Num. vertices  %d", renderer.statistics.numVertices);

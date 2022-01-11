@@ -18,3 +18,4 @@ obj
 ToyEngine/*.vcxproj.*
 *.lib
 ToyEngine/imgui.ini
+ToyEngine/data/models/bistro/scene.glb

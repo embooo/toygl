@@ -8,6 +8,7 @@
 
 #include "Light.h"
 #include "OpenGLRenderer.h"
+
 class Window;
 
 class UserInterface : public IObserver
@@ -16,7 +17,7 @@ public:
 	UserInterface();
 	virtual void onUpdate(Event& event) override;
 	virtual void init(Window& window);
-	virtual void beginFrame(Light& light, const Camera& camera,  OpenGLRenderer& renderer);
+	virtual void beginFrame(std::vector<GLuint>& tex, Light& light, const Camera& camera,  OpenGLRenderer& renderer);
 	virtual void render();
 	virtual bool wantCaptureMouse() const;
 	virtual bool wantCaptureKeyboard() const;

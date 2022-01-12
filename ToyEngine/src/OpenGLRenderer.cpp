@@ -32,10 +32,22 @@ void OpenGLRenderer::render(gltf::Model& model, Shader& program, Camera& camera,
     program.setMat4("projection", camera.projMat());
 
     program.setFloat3("cameraPos",  camera.pos());
-    program.setFloat3("lightPos",   light.pos());
-    program.setFloat4("lightColor", light.color());
 
-    program.setFloat("lightRadius", ((PointLight&)light).radius());
+    if (light.type() == LightType::POINT_LIGHT)
+    {
+        program.setFloat3("lightPos", light.pos());
+        program.setFloat4("lightColor", light.color());
+
+        program.setFloat("lightRadius", ((PointLight&)light).radius());
+    }
+
+    if (light.type() == LightType::DIR_LIGHT)
+    {
+        program.setFloat3("lightDir",   ((DirectionalLight&)light).dir());
+        program.setFloat4("lightColor", light.color());
+    }
+
+
 
     for (gltf::Node* node : model.nodes)
     {
@@ -60,6 +72,7 @@ void OpenGLRenderer::render(gltf::Model& model, Shader& program, Camera& camera,
 void OpenGLRenderer::drawNode(gltf::Node* node, Shader& program, gltf::Model& model)
 {
     program.setMat4("model", node->getGlobalTransform() * glm::scale(scale) * glm::translate(translation));
+    //program.setMat4("model", glm::scale(scale) * glm::translate(translation));
 
     for (const gltf::Primitive* p : node->mesh->primitives)
     {

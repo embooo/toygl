@@ -28,7 +28,7 @@ void UserInterface::init(Window& window)
     ImGui_ImplOpenGL3_Init(glsl_version);
 }
 
-void UserInterface::beginFrame(Light& light, const Camera& camera,  OpenGLRenderer& renderer)
+void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Camera& camera,  OpenGLRenderer& renderer)
 {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -65,19 +65,31 @@ void UserInterface::beginFrame(Light& light, const Camera& camera,  OpenGLRender
     if (show_another_window)
     {
         ImGui::Begin("Shader Parameters", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-
+        static float test(0.0f);
         ImGui::Text("Light");               // Display some text (you can use a format strings too)
-        ImGui::DragFloat3("Light Position", glm::value_ptr(light.pos()), 0.1f, FLT_MIN, FLT_MAX);
-        ImGui::ColorEdit4("Light Color",    glm::value_ptr(light.color()));
-        ImGui::DragFloat("Light Radius", &((PointLight&)light).radius(), 0.001f, 0.0f, 100.0f);
 
-        ImGui::DragFloat3("Translation", glm::value_ptr(renderer.translation), 0.1f, FLT_MIN, FLT_MAX);
-        ImGui::DragFloat3("Scale",       glm::value_ptr(renderer.scale),       0.1f, FLT_MIN, FLT_MAX);
+        ImGui::ColorEdit4("Light Color", glm::value_ptr(light.color()));
+
+        if (light.type() == LightType::POINT_LIGHT)
+        {
+            ImGui::DragFloat3("Light Position", glm::value_ptr(light.pos()), 0.1f, -1000.0f, 1000.0f);
+            ImGui::DragFloat("Light Radius", &((PointLight&)light).radius(), 0.01f, 0.0f, 100.0f);
+        }
+
+        if (light.type() == LightType::DIR_LIGHT)
+        {
+            ImGui::DragFloat3("Light Direction", glm::value_ptr(((DirectionalLight&)light).dir()), 0.01f, -1000.0f, 1000.0f);
+        }
+
+        ImGui::DragFloat3("Translation", glm::value_ptr(renderer.translation), 0.1f, -1000.0f, 1000.0f);
+        ImGui::DragFloat3("Scale",       glm::value_ptr(renderer.scale),       0.1f, -1000.0f, 1000.0f);
 
         if (ImGui::Button("Close"))
             show_another_window = false;
         ImGui::End();
     }
+
+
 }
 
 void UserInterface::render()

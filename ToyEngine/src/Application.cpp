@@ -3,7 +3,8 @@
 #include "Application.h"
 #include "Light.h"
 
-static Light light;
+static Light light     = PointLight();
+static Light& dirLight = DirectionalLight();
 
 Application::Application()
 {
@@ -27,9 +28,11 @@ Application::Application()
 
     // glTF
     model.loadFromFile("./data/models/sponza-pbr/scene.glb");
+    //model.loadFromFile("./data/models/suzanne/scene.gltf");
     //model.loadFromFile("./data/models/duck/scene.gltf");
     //model.loadFromFile("./data/models/bistro/scene.glb");
-    //model.loadFromFile("./data/models/sphere/scene.gltf");
+    //model.loadFromFile("./data/models/lantern4k/scene.gltf");
+    //model.loadFromFile("./data/models/MetalRoughSpheres/scene.gltf");
 
     m_lastFrameTime = (float)glfwGetTime();
 
@@ -58,10 +61,10 @@ void Application::render()
     m_glRenderer->clear();
     {
         // Prepare user interface
-        m_Window->getUI().beginFrame(light, m_Camera, *m_glRenderer);
+        m_Window->getUI().beginFrame(model.textureBufferIds, dirLight, m_Camera, *m_glRenderer);
         {
             // Render geometry
-            m_glRenderer->render(model, m_Shader, m_Camera, light);
+            m_glRenderer->render(model, m_Shader, m_Camera, dirLight);
         }
     
         // Render user interface

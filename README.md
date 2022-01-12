@@ -28,7 +28,10 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 - [ ] Shadow mapping 
 
 ### Rendering methods
+- [ ] Deferred rendering 
 - [ ] Forward+ 
+
+### Geometry culling methods
 - [ ] Frustum culling
 
 ### Resources

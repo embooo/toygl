@@ -9,6 +9,10 @@
 #include "Light.h"
 #include "OpenGLRenderer.h"
 
+#ifdef OPTICK_DEBUG
+	#include "optick.h"
+#endif
+
 class Window;
 
 class UserInterface : public IObserver

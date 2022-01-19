@@ -48,10 +48,12 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
         {
             m_pWindow->toggleVsync();
         }
+
+        ImGui::Checkbox("Multi Draw Indirect", &renderer.m_bEnableMultiDrawIndirect);
         
         ImGui::Text("Num. draw calls  %d", renderer.statistics.numDrawCalls);
-        ImGui::Text("Num. indices  %d", renderer.statistics.numIndices);
-        ImGui::Text("Num. vertices  %d", renderer.statistics.numVertices);
+        ImGui::Text("Num. indices  %d",    renderer.statistics.numIndices);
+        ImGui::Text("Num. vertices  %d",   renderer.statistics.numVertices);
 
         const float* pos = glm::value_ptr(camera.pos());
         ImGui::Text("Camera world position (%.1f, %.1f, %.1f)", pos[0], pos[1], pos[2]);
@@ -65,7 +67,7 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
     if (show_another_window)
     {
         ImGui::Begin("Shader Parameters", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-        static float test(0.0f);
+        ImGui::Checkbox("Enable Normal Map", &renderer.m_bEnableNormalMap);
         ImGui::Text("Light");               // Display some text (you can use a format strings too)
 
         ImGui::ColorEdit4("Light Color", glm::value_ptr(light.color()));
@@ -94,6 +96,9 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
 
 void UserInterface::render()
 {
+#ifdef OPTICK_DEBUG
+    OPTICK_EVENT();
+#endif
     // Rendering
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

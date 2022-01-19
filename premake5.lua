@@ -17,6 +17,8 @@ workspace "ToyGL"
 	IncludePaths["glm"]       = "ToyEngine/thirdparty/glm/"
 	IncludePaths["tinygltf"]  = "ToyEngine/thirdparty/tinygltf/"
 	IncludePaths["ImGui"]     = "ToyEngine/thirdparty/ImGui/include"
+	IncludePaths["Optick"]     = "ToyEngine/thirdparty/Optick"
+
 
 	
 project "ToyEngine"
@@ -29,6 +31,7 @@ project "ToyEngine"
 	{ 
 		"ToyEngine/include/**.h",
 		"ToyEngine/src/**.cpp",
+		"ToyEngine/thirdparty/Optick/**cpp",
 		".clang-tidy"
 	}
 
@@ -39,7 +42,8 @@ project "ToyEngine"
 		IncludePaths.Glad,
 		IncludePaths.glm,
 		IncludePaths.tinygltf,
-		IncludePaths.ImGui
+		IncludePaths.ImGui,
+		IncludePaths.Optick
 	}
 
 	links
@@ -64,6 +68,7 @@ project "ToyEngine"
 		runtime "Debug"
 		symbols "on"
 		buildoptions {"/Od"}
+		defines { "OPTICK_DEBUG", "DEBUG_BUILD" }
 
 	filter "configurations:Release"
 		runtime "Release"

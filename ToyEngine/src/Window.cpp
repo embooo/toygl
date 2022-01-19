@@ -34,6 +34,9 @@ void Window::init()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, m_Props.GLProps.major);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, m_Props.GLProps.minor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef DEBUG_BUILD
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE); // Enables OpenGL debug output
+#endif
     m_pWindow = glfwCreateWindow(m_Props.width, m_Props.height, m_Props.title, nullptr, nullptr);
 
     if (!m_pWindow)
@@ -100,7 +103,10 @@ void Window::init()
 
 void Window::swapBuffers()
 {
-    glfwSwapInterval(m_Props.swapInterval); // Enable vsync
+#ifdef OPTICK_DEBUG
+    OPTICK_EVENT();
+#endif
+    glfwSwapInterval(m_Props.swapInterval);
     glfwSwapBuffers(m_pWindow);
 }
 

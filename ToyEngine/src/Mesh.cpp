@@ -51,18 +51,18 @@ void Mesh::setup()
 {
     // Create Vertex array object
     // Storing layout, format of vertex data and buffer objects
-    m_VAO.create();
+    m_VAO.generate();
     m_VAO.bind();
 
     // Create Vertex buffer object
     // Stores vertex data
-    m_VBO.create();
+    m_VBO.generate();
     m_VBO.bind();
     m_VBO.initData(sizeof(Vertex) * m_Vertices.size(), m_Vertices.data(), GL_STATIC_DRAW);
 
     // Create Element buffer object
     // Stores vertex indices
-    m_EBO.create();
+    m_EBO.generate();
     m_EBO.bind();
     m_EBO.initData(m_Indices, m_EBO.getComponentType(), GL_STATIC_DRAW);
 

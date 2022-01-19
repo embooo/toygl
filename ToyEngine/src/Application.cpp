@@ -3,6 +3,10 @@
 #include "Application.h"
 #include "Light.h"
 
+#ifdef OPTICK_DEBUG
+    #include "optick.h"
+#endif
+
 static Light light     = PointLight();
 static Light& dirLight = DirectionalLight();
 
@@ -22,17 +26,22 @@ Application::Application()
 
     // Mesh test
     m_Camera = Camera(m_Window.get(), "Default", ViewFrustum(45.0f, (float)m_Window->width(), (float)m_Window->height(), 0.1f, 100.0f));
+    
     m_Shader            .build("./data/shaders/vertex.glsl", "./data/shaders/CookTorrance.glsl");
     m_InfiniteGridShader.build("./data/shaders/VS_InfiniteGrid.glsl", "./data/shaders/FS_InfiniteGrid.glsl");
 
 
     // glTF
-    model.loadFromFile("./data/models/sponza-pbr/scene.glb");
+    //model.loadFromFile("./data/models/sponza-pbr/scene.glb");
     //model.loadFromFile("./data/models/suzanne/scene.gltf");
     //model.loadFromFile("./data/models/duck/scene.gltf");
     //model.loadFromFile("./data/models/bistro/scene.glb");
     //model.loadFromFile("./data/models/lantern4k/scene.gltf");
     //model.loadFromFile("./data/models/MetalRoughSpheres/scene.gltf");
+    model.loadFromFile("./data/models/Sponza/Sponza.gltf");
+    //model.loadFromFile("./data/models/WaterBottle/glTF-Binary/WaterBottle.glb");
+    //model.loadFromFile("./data/models/rifle/scene.glb");
+    m_glRenderer->buildDrawIndirectCommands(model);
 
     m_lastFrameTime = (float)glfwGetTime();
 
@@ -41,10 +50,14 @@ Application::Application()
 
 void Application::run()
 {
+
     while(!m_Window->isClosed())
     {
         if (!m_Minimized)
         {
+#ifdef OPTICK_DEBUG
+            OPTICK_FRAME("MainThread");
+#endif
             glfwPollEvents();
             update(getDeltaTime());
             render();
@@ -58,6 +71,9 @@ void Application::run()
 
 void Application::render()
 {
+#ifdef OPTICK_DEBUG
+    OPTICK_EVENT();
+#endif
     m_glRenderer->clear();
     {
         // Prepare user interface
@@ -65,6 +81,7 @@ void Application::render()
         {
             // Render geometry
             m_glRenderer->render(model, m_Shader, m_Camera, dirLight);
+            //m_glRenderer->renderIndirect(model, m_Shader, m_Camera, dirLight);
         }
     
         // Render user interface
@@ -76,12 +93,14 @@ void Application::render()
 
 void Application::update(float deltaTime)
 {
+#ifdef OPTICK_DEBUG
+    OPTICK_EVENT();
+#endif
     m_Camera.update(deltaTime);
 }
 
 void Application::onUpdate(Event& event)
 {
-
     if (m_Window->getUI().wantCaptureKeyboard() || m_Window->getUI().wantCaptureMouse())
     {
         m_Camera.DisableRotation();

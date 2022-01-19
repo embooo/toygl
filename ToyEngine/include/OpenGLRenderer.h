@@ -8,6 +8,16 @@
 #include "Camera.h"
 #include "Light.h"
 
+// Parameters for MultiDrawElementsIndirect
+struct IndirectParam
+{
+    unsigned int indexCount;
+    unsigned int instanceCount;
+    unsigned int firstIndex;       // offset, same as in glDrawElements()
+    unsigned int vertexBase;
+    unsigned int instanceBase;
+};
+
 
 class OpenGLRenderer
 {
@@ -20,7 +30,9 @@ public:
     void clear();
 
     // gltf specific
-    void render(gltf::Model& model, Shader& program, Camera& camera, Light& light);
+    void render(opengltf::Model& model, Shader& program, Camera& camera, Light& light);
+
+    void buildDrawIndirectCommands(opengltf::Model& model);
 
     struct RenderStats
     {
@@ -35,10 +47,13 @@ public:
 
     // todo : remove 
     glm::vec3 translation = glm::vec3(0.0f), scale = glm::vec3(1.0f);
+    bool m_bEnableMultiDrawIndirect;
+    bool m_bEnableNormalMap;
 private:
     glm::vec4 clearColor;
-
+    std::vector<IndirectParam> drawIndirectCommands;
+    unsigned int drawIndirectBuffer;
     // gltf specific
-    void drawNode(gltf::Node* node, Shader& program, gltf::Model& model);
+    void drawNode(opengltf::Node* node, Shader& program, opengltf::Model& model);
 
 };

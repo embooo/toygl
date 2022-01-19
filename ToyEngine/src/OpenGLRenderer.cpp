@@ -1,9 +1,29 @@
 #include "OpenGLRenderer.h"
 
+#ifdef OPTICK_DEBUG
+    #include "optick.h"
+#endif
+
 OpenGLRenderer::OpenGLRenderer()
-    : clearColor(glm::vec4(0.2, 0.2, 0.2, 1))
+    : clearColor(glm::vec4(0.2, 0.2, 0.2, 1)), m_bEnableMultiDrawIndirect(false), m_bEnableNormalMap(true)
 {
 }
+
+#ifdef DEBUG_BUILD
+    void GLAPIENTRY
+    MessageCallback(GLenum source,
+        GLenum type,
+        GLuint id,
+        GLenum severity,
+        GLsizei length,
+        const GLchar* message,
+        const void* userParam)
+    {
+        fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+            (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+            type, severity, message);
+    }
+#endif
 
 void OpenGLRenderer::init()
 {
@@ -16,22 +36,31 @@ void OpenGLRenderer::init()
     glFrontFace(GL_CCW); 
     //glEnable(GL_CULL_FACE);
     //glCullFace(GL_BACK); 
+
+#ifdef DEBUG_BUILD
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(MessageCallback, nullptr);
+#endif
 }
 
-void OpenGLRenderer::render(gltf::Model& model, Shader& program, Camera& camera, Light& light)
+void OpenGLRenderer::render(opengltf::Model& model, Shader& program, Camera& camera, Light& light)
 {
+#ifdef OPTICK_DEBUG
+    OPTICK_EVENT();
+#endif
     program.use();
 
-    model.m_VBO.bind();
     model.m_VAO.bind();
 
     statistics.reset();
     
-    //program.setMat4("model",      glm::translate(glm::identity<glm::mat4>(), translation));
+    program.setMat4("model",      model.modelMat() * glm::scale(scale) * glm::translate(translation));
+    //program.setMat4("model",      glm::scale(scale) * glm::translate(translation));
     program.setMat4("view",       camera.viewMat());
     program.setMat4("projection", camera.projMat());
 
     program.setFloat3("cameraPos",  camera.pos());
+    program.setInt("enableNormalMap", m_bEnableNormalMap);
 
     if (light.type() == LightType::POINT_LIGHT)
     {
@@ -47,74 +76,128 @@ void OpenGLRenderer::render(gltf::Model& model, Shader& program, Camera& camera,
         program.setFloat4("lightColor", light.color());
     }
 
-
-
-    for (gltf::Node* node : model.nodes)
+    if (m_bEnableMultiDrawIndirect)
     {
-        if (node->mesh)
-        {
-            drawNode(node, program, model);
-        }
+        // Configure the texture unit pointing to the 3D texture array
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, model.textureArray);
+        program.setInt("textureArray", 0);
 
-        if (!node->children.empty())
+        // Bind buffer containing all material informations
+        model.ssbo_materials.bind();
+
+        // Bind buffer containing all draw commands for the indirect draw
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, drawIndirectBuffer);
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, drawIndirectCommands.size(), 0);
+
+        statistics.numDrawCalls += 1;
+        statistics.numIndices   += model.indices.size();
+        statistics.numVertices  += model.vertices.size();
+    }
+    else
+    {
+        for (opengltf::Node* node : model.nodes)
         {
-            for (gltf::Node* node : node->children)
+            if (node->mesh)
             {
-                if (node->mesh)
+                drawNode(node, program, model);
+            }
+
+            if (!node->children.empty())
+            {
+                for (opengltf::Node* node : node->children)
                 {
-                    drawNode(node, program, model);
+                    if (node->mesh)
+                    {
+                        drawNode(node, program, model);
+                    }
                 }
             }
         }
     }
+
 }
 
-void OpenGLRenderer::drawNode(gltf::Node* node, Shader& program, gltf::Model& model)
+void OpenGLRenderer::buildDrawIndirectCommands(opengltf::Model& model)
 {
-    program.setMat4("model", node->getGlobalTransform() * glm::scale(scale) * glm::translate(translation));
-    //program.setMat4("model", glm::scale(scale) * glm::translate(translation));
-
-    for (const gltf::Primitive* p : node->mesh->primitives)
+    for (opengltf::Node* node : model.nodes)
     {
-        const gltf::Material& material = model.materials.at(p->materialID);
-        if (material.hasBaseColorTexture)
+        if (node->mesh)
         {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, material.baseColorTexture->glBufferId);
-            program.setInt("baseColorTexture", 0); // set texture unit's ID, not the texture buffer's id !
-            program.setInt("currentBaseColorTexcoord", material.baseColorTexture->texCoordSet);
+            for (const opengltf::Primitive* p : node->mesh->primitives)
+            {
+                drawIndirectCommands.push_back({ p->indexCount, 1, p->firstIndex, 0, 0 });
+            }
         }
 
-        if (material.hasNormalTexture)
+        if (!node->children.empty())
         {
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, material.normalTexture->glBufferId);
-            program.setInt("normalTexture", 1);
-            program.setInt("currentNormalTexcoord", material.normalTexture->texCoordSet);
+            for (opengltf::Node* node : node->children)
+            {
+                if (node->mesh)
+                {
+                    for (const opengltf::Primitive* p : node->mesh->primitives)
+                    {
+                        drawIndirectCommands.push_back({ p->indexCount, 1, p->firstIndex, 0, 0 });
+                    }
+                }
+            }
         }
+    }
 
-        if (material.hasMetallicRoughnessTexture)
-        {
-            glActiveTexture(GL_TEXTURE2);
-            glBindTexture(GL_TEXTURE_2D, material.metallicRoughnessTexture->glBufferId);
-            program.setInt("metallicRoughnessTexture", 2);
-            program.setFloat("metallicFactor", material.metallicFactor);
-            program.setFloat("roughnessFactor", material.roughnessFactor);
-            program.setInt("currentMetallicRoughnessTexcoord", material.metallicRoughnessTexture->texCoordSet);
-        }
+    // Generate OpenGL buffer
+    glGenBuffers(1, &drawIndirectBuffer);
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, drawIndirectBuffer);
+    glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(IndirectParam) * drawIndirectCommands.size(), drawIndirectCommands.data(), GL_DYNAMIC_DRAW);
+}
 
-        if (material.hasEmissiveTexture)
-        {
-            glActiveTexture(GL_TEXTURE3);
-            glBindTexture(GL_TEXTURE_2D, material.emissiveTexture->glBufferId);
-            program.setInt("emissiveTexture", 3);
-            program.setFloat3("emissiveFactor", material.emissiveFactor);
-        }
+void OpenGLRenderer::drawNode(opengltf::Node* node, Shader& program, opengltf::Model& model)
+{
+#ifdef OPTICK_DEBUG
+    OPTICK_EVENT();
+#endif
 
-        glDrawElements(p->mode, p->numIndices, GL_UNSIGNED_INT, (void*)(p->startIndices * sizeof(GL_UNSIGNED_INT)));
+    for (const opengltf::Primitive* p : node->mesh->primitives)
+    {
+        const opengltf::Material& material = model.materials.at(p->materialID);
+        //if (material.hasBaseColorTexture)
+        //{
+        //    glActiveTexture(GL_TEXTURE0);
+        //    glBindTexture(GL_TEXTURE_2D, material.baseColorTexture->glBufferId);
+        //    program.setInt("baseColorTexture", 0); // set texture unit's ID, not the texture buffer's id !
+        //    program.setInt("currentBaseColorTexcoord", material.baseColorTexture->texCoordSet);
+        //}
+
+        //if (material.hasNormalTexture)
+        //{
+        //    glActiveTexture(GL_TEXTURE1);
+        //    glBindTexture(GL_TEXTURE_2D, material.normalTexture->glBufferId);
+        //    program.setInt("normalTexture", 1);
+        //    program.setInt("currentNormalTexcoord", material.normalTexture->texCoordSet);
+        //}
+
+        //if (material.hasMetallicRoughnessTexture)
+        //{
+        //    glActiveTexture(GL_TEXTURE2);
+        //    glBindTexture(GL_TEXTURE_2D, material.metallicRoughnessTexture->glBufferId);
+        //    program.setInt("metallicRoughnessTexture", 2);
+        //    program.setFloat("metallicFactor", material.metallicFactor);
+        //    program.setFloat("roughnessFactor", material.roughnessFactor);
+        //    program.setInt("currentMetallicRoughnessTexcoord", material.metallicRoughnessTexture->texCoordSet);
+        //}
+
+        //if (material.hasEmissiveTexture)
+        //{
+        //    glActiveTexture(GL_TEXTURE3);
+        //    glBindTexture(GL_TEXTURE_2D, material.emissiveTexture->glBufferId);
+        //    program.setInt("emissiveTexture", 3);
+        //    program.setFloat3("emissiveFactor", material.emissiveFactor);
+        //}
+
+        glDrawElements(p->mode, p->indexCount, GL_UNSIGNED_INT, (void*)(p->firstIndex * sizeof(GL_UNSIGNED_INT)));
         
         statistics.numDrawCalls += 1;
-        statistics.numIndices   += p->numIndices;
+        statistics.numIndices   += p->indexCount;
         statistics.numVertices  += p->numVertices;
     }
 }
@@ -134,6 +217,9 @@ void OpenGLRenderer::setClearColor(float r, float g, float b, float a)
 
 void OpenGLRenderer::clear()
 {
+#ifdef OPTICK_DEBUG
+    OPTICK_EVENT();
+#endif
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 

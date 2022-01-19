@@ -6,8 +6,8 @@
 class Buffer
 {
 public:
-    virtual void create() = 0;
-    virtual void bind() const = 0;
+    virtual void generate() {};
+    virtual void bind() {};
     virtual void unbind() const = 0;
 
     virtual void release() = 0;
@@ -21,8 +21,8 @@ class VertexArray : public Buffer
 public:
     VertexArray();
 
-    virtual void create() override;
-    virtual void bind() const override;
+    virtual void generate() override;
+    virtual void bind() const ;
     virtual void unbind() const override;
     virtual void release() override;
 
@@ -41,9 +41,9 @@ class VertexBuffer : public Buffer
 public:
     VertexBuffer();
 
-    virtual void create() override;
+    virtual void generate() override;
     virtual void initData(size_t size, const void* data, GLenum usage = GL_STATIC_DRAW);
-    virtual void bind() const override;
+    virtual void bind() const ;
     virtual void unbind() const override;
     virtual void release() override;
 
@@ -62,7 +62,7 @@ class ElementBuffer : public Buffer
 public:
     ElementBuffer();
 
-    virtual void create() override;
+    virtual void generate() override;
     
     template<typename T>
     void initData(const std::vector<T> indices, GLenum dataType, GLenum usage = GL_STATIC_DRAW)
@@ -79,7 +79,7 @@ public:
    
     void initData(void* indices, GLenum dataType, uint32_t numIndices, GLenum usage = GL_STATIC_DRAW);
 
-    virtual void bind()    const override;
+    virtual void bind()    const ;
     virtual void unbind()  const override;
     virtual void release() override;
 
@@ -95,4 +95,22 @@ private:
     GLenum m_ComponentType;
     size_t m_SizeInBytes;
     size_t m_NumIndices;
+};
+
+class SSBO : public Buffer
+{
+public:
+    SSBO();
+
+    virtual void generate() ;
+    virtual void setData(size_t size, const void* data, GLenum usage = GL_STATIC_DRAW);
+    virtual void bind();
+    virtual void bindBase(int bindingPoint);
+    virtual void unbind() const override;
+    virtual void release() override;
+
+    virtual ~SSBO() override;
+private:
+    unsigned int m_Id;
+
 };

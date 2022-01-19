@@ -6,7 +6,7 @@ VertexArray::VertexArray()
 {
 }
 
-void VertexArray::create()
+void VertexArray::generate()
 {
     glGenVertexArrays(1, &m_Id);
 }
@@ -27,10 +27,17 @@ void VertexArray::release()
     glDeleteVertexArrays(1, &m_Id);
 }
 
-void VertexArray::setupAttribute(int attributeId, int nbComponents, GLenum componentType, bool normalized, size_t stride, const void * offset)
+void VertexArray::setupAttribute(int index, int size, GLenum type, bool normalized, size_t stride, const void *offset)
 {
-    glEnableVertexAttribArray(attributeId);
-    glVertexAttribPointer(attributeId, nbComponents, componentType, normalized, stride, offset);
+    glEnableVertexAttribArray(index);
+    if (type == GL_INT || type == GL_UNSIGNED_INT)
+    {
+        glVertexAttribIPointer(index, size /* nb of components */, type /* components type */, stride, offset);
+    }
+    else
+    {
+        glVertexAttribPointer(index, size /* nb of components */, type /* components type */, normalized, stride, offset);
+    }
 }
 
 VertexArray::~VertexArray()
@@ -45,7 +52,7 @@ VertexBuffer::VertexBuffer()
 
 }
 
-void VertexBuffer::create()
+void VertexBuffer::generate()
 {
     glGenBuffers(1, &m_Id);
 }
@@ -95,7 +102,7 @@ void ElementBuffer::initData(void* indices, GLenum dataType, uint32_t numIndices
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_SizeInBytes, indices, usage);
 }
 
-void ElementBuffer::create()
+void ElementBuffer::generate()
 {
     glGenBuffers(1, &m_Id);
 }
@@ -139,4 +146,43 @@ size_t ElementBuffer::getSizeInBytes()
 size_t ElementBuffer::getNumIndices()
 {
     return m_NumIndices;
+}
+
+SSBO::SSBO()
+    : m_Id(0)
+{
+}
+
+void SSBO::generate()
+{
+    glGenBuffers(1, &m_Id);
+}
+
+void SSBO::setData(size_t size, const void* data, GLenum usage)
+{
+    glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
+}
+
+void SSBO::bind()
+{
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_Id);
+}
+
+void SSBO::bindBase(int bindingPoint)
+{
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, m_Id);
+}
+
+void SSBO::unbind() const
+{
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+void SSBO::release()
+{
+    glDeleteBuffers(1, &m_Id);
+}
+
+SSBO::~SSBO()
+{
 }

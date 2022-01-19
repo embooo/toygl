@@ -7,10 +7,12 @@
 #include "gltfModel.h"
 #include <glm/gtc/type_ptr.hpp>
 
+glm::mat4& opengltf::Model::modelMat()
+{
+    return matModel;
+}
 
-
-
-void gltf::Model::loadFromFile(const std::string& filename)
+void opengltf::Model::loadFromFile(const std::string& filename)
 {
     std::string error;
     std::string warning;
@@ -31,12 +33,11 @@ void gltf::Model::loadFromFile(const std::string& filename)
     {
         std::cout << "Loaded " << filename << " successfully. \n";
 
-        loadImages(tinyglTFModel);
-        loadSamplers(tinyglTFModel);
-        loadTextures(tinyglTFModel);
-
+        loadTextures (tinyglTFModel);
+        loadMaterials(tinyglTFModel);
         
         /////// 1. Extract model data from nodes 
+        
         for(const tinygltf::Scene& scene : tinyglTFModel.scenes)
         {
             for(int nodeId : scene.nodes)
@@ -46,33 +47,32 @@ void gltf::Model::loadFromFile(const std::string& filename)
                traverseNode(tinyglTFModel, vertices, indices, nodeId, nullptr, node);
             }
         }
+        
+        std::cerr << "Bounding box : " << bbox << std::endl;
 
-        std::cerr << "Model : \n" << "Bounding box : " << bbox << std::endl;
+        // Set the transform of the whole model
+        matModel = nodes.front()->getGlobalTransform();
 
-        // Compute tangeants and bitangeant
-        generateTangeantsBitangeants();
-
-        std::cerr << "Loaded: " << materials.size() << " materials." << std::endl;
-
-        /////// 2. Setup OpenGL buffers
-        createTextureBuffers();
+        /////// 2. Setup OpenGL buffers / textures
+        ssbo_materials = buildMaterialSSBO(0);
+        textureArray = createTextureArray(0);
 
         // Create Vertex array object
         // Storing layout, format of vertex data and buffer objects
-        m_VAO.create();
+        m_VAO.generate();
         m_VAO.bind();
 
         // Create Vertex buffer object
         // Stores vertex data
-        m_VBO.create();
+        m_VBO.generate();
         m_VBO.bind();
-        m_VBO.initData(sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+        m_VBO.initData(sizeof(Vertex) * vertices.size(), vertices.getData(), GL_DYNAMIC_DRAW);
 
         //// Create Element buffer object
         //// Stores vertex indices
-        m_EBO.create();
+        m_EBO.generate();
         m_EBO.bind();
-        m_EBO.initData(indices, GL_UNSIGNED_SHORT, GL_STATIC_DRAW);
+        m_EBO.initData(indices, GL_UNSIGNED_INT, GL_DYNAMIC_DRAW);
 
         // Here we specify the layout and format of the vertex data 
         // Stride is the amount of bytes between consecutive vertex attributes of the same kind
@@ -82,10 +82,10 @@ void gltf::Model::loadFromFile(const std::string& filename)
         // 0, 1, 2, 3 are indices for Position, Normal, Texcoord and Color respectively
         m_VAO.setupAttribute(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
         m_VAO.setupAttribute(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, normal));
-        m_VAO.setupAttribute(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, texcoord_0));
-        m_VAO.setupAttribute(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, texcoord_1));
-        m_VAO.setupAttribute(4, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, tangeant));
-        m_VAO.setupAttribute(5, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, bitangeant));
+        m_VAO.setupAttribute(2, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, tangeant));
+        m_VAO.setupAttribute(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, texcoord_0));
+        m_VAO.setupAttribute(4, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, texcoord_1));
+        m_VAO.setupAttribute(5, 1, GL_INT,   GL_FALSE, stride, (void*)offsetof(Vertex, materialID)); // /!\ use glVertexAttribIPointer for integral values
 
         // Finished modifying our buffers and array
         m_VAO.unbind();
@@ -98,6 +98,68 @@ void gltf::Model::loadFromFile(const std::string& filename)
     }
 }
 
+SSBO opengltf::Model::buildMaterialSSBO(unsigned int bindingPoint)
+{
+    std::vector<ShaderMaterial> sm;
+
+    for (Material& mat : materials)
+    {
+        bool notEmpty = false;
+
+        ShaderMaterial smat;
+
+        if (mat.base_color_tex) 
+        { 
+            notEmpty = true;
+            smat.albedo = mat.base_color_tex->id; 
+            //smat.baseColorFactor = mat.baseColorFactor; 
+        }
+        // --------------------------------------------
+        if (mat.emissive_tex)  
+        { 
+            notEmpty = true;
+            smat.emissive = mat.emissive_tex->id; 
+            //smat.emissiveFactor = mat.emissiveFactor;
+        }
+        // --------------------------------------------
+
+        if (mat.normal_tex) 
+        { 
+            notEmpty = true;
+            smat.normal = mat.normal_tex->id; 
+        }
+        // --------------------------------------------
+
+        if (mat.occlusion_tex) 
+        { 
+            notEmpty = true;
+            smat.occlusion = mat.occlusion_tex->id; 
+        }
+        // --------------------------------------------
+
+        if (mat.metallic_rough_tex)
+        {
+            notEmpty = true;
+            smat.metalRough = mat.metallic_rough_tex->id;
+            //smat.metallicFactor  = mat.metallicFactor;
+            //smat.roughnessFactor = mat.roughnessFactor;
+        }
+
+        if(notEmpty)
+            sm.push_back(smat);
+    }
+
+    SSBO materials;
+    materials.generate();
+    materials.bind();
+    materials.bindBase(bindingPoint);
+    materials.setData(sm.size() * sizeof(ShaderMaterial), sm.data(), GL_DYNAMIC_DRAW);
+
+    materials.unbind();
+
+    return materials;
+}
+
 /// <summary>
 /// This function converts a glTF node into an internal representation
 /// and sends it to be processed.
@@ -106,9 +168,9 @@ void gltf::Model::loadFromFile(const std::string& filename)
 /// <param name="parentIndex"> Index of the parent node in the glTF file </param>
 /// <param name="parent"> Internal representation of a glTF node </param>
 /// <param name="glTFDataNode"> Tinygltf representation of a glTF node </param>
-void gltf::Model::traverseNode(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, int nodeIndex, gltf::Node* parent, const tinygltf::Node& glTFDataNode)   
+void opengltf::Model::traverseNode(tinygltf::Model& model, Vertices& vertices, std::vector<unsigned int>& indices, int nodeIndex, opengltf::Node* parent, const tinygltf::Node& glTFDataNode)
 {
-    gltf::Node* current(new Node{});
+    opengltf::Node* current(new Node{});
     
     processElements(model, vertices, indices, parent, glTFDataNode, current);
 
@@ -129,46 +191,48 @@ void gltf::Model::traverseNode(tinygltf::Model& model, std::vector<Vertex>& vert
 /// <param name="node"></param>
 
 
-void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& vertices, std::vector<unsigned int>& indices, gltf::Node* parent, const tinygltf::Node& node, gltf::Node* internalNode)  // processNode
+void opengltf::Model::processElements(tinygltf::Model& model, Vertices& vertices, std::vector<unsigned int>& indices, opengltf::Node* parent, const tinygltf::Node& node, opengltf::Node* newNode)  // processNode
 {
-    internalNode->name = node.mesh;
+    newNode->name = node.name;
     // Extract local transform
     if (node.matrix.size() == 16)
     {
-        internalNode->matrix = glm::make_mat4(node.matrix.data());
+        newNode->matrix = glm::make_mat4(node.matrix.data());
     }
 
     if (node.translation.size() == 3) 
     {
-        internalNode->translation = glm::make_vec3(node.translation.data());
+        newNode->translation = glm::make_vec3(node.translation.data());
     }
 
     if (node.rotation.size() == 4) 
     {
-        internalNode->rotation = glm::make_quat(node.rotation.data());
+        newNode->rotation = glm::make_quat(node.rotation.data());
     }
 
     if (node.scale.size() == 3) 
     {
-        internalNode->scale = glm::make_vec3(node.scale.data());
+        newNode->scale = glm::make_vec3(node.scale.data());
     }
 
     // Check if node refers to a mesh or a camera
     if (node.mesh != -1)
     {
-        internalNode->mesh = new gltf::Mesh();
+        newNode->mesh = new opengltf::Mesh();
         const tinygltf::Mesh& glTFMesh = model.meshes.at(node.mesh);
-        internalNode->mesh->name = glTFMesh.name;
-
+        newNode->mesh->name = glTFMesh.name;
         
         for(const tinygltf::Primitive& p : glTFMesh.primitives)
         {
             Primitive* primitive = new Primitive{};
 
             primitive->startVertices = vertices.size(); 
-            primitive->startIndices  = indices.size();
+            primitive->firstIndex    = indices.size();
+            primitive->materialID    = p.material;
 
-            if(p.mode > -1) primitive->mode = p.mode;
+            if (p.mode > -1) primitive->mode = p.mode;
+
+            std::cout << "Primitive mat id : " << primitive->materialID << std::endl;
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Extract Vertex Attributes 
             /// 1. Extract the buffers and informations regarding layout
@@ -176,6 +240,8 @@ void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& v
             const float* positionBuffer  = nullptr;
 
             const float* normalBuffer    = nullptr;
+
+            const float* tangentBuffer = nullptr;
 
             const float* texcoord0Buffer = nullptr;
 
@@ -190,7 +256,6 @@ void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& v
                 primitive->numVertices = accessor.count;
                 totalNumVertices += accessor.count;
                 positionBuffer = reinterpret_cast<const float*>(&(buffer.data[bufferView.byteOffset + accessor.byteOffset]));
-                
             }
 
             //assert(positionBuffer != nullptr, ("error : model doesn't contain vertex positions."));
@@ -222,24 +287,13 @@ void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& v
                 texcoord1Buffer = reinterpret_cast<const float*>(&(buffer.data[bufferView.byteOffset + accessor.byteOffset]));
             }
 
-
-            ////////////////////////////////////////////////////////////////////////////////// 
-            /// 
-            for(size_t i = 0; i < primitive->numVertices; ++i)
+            if (p.attributes.find("TANGENT") != p.attributes.end())
             {
-                Vertex vertex;
-                
-                vertex.position   = glm::make_vec3(&positionBuffer [i * 3]);
+                const tinygltf::Accessor& accessor     = model.accessors.at(p.attributes.at("TANGENT"));
+                const tinygltf::BufferView& bufferView = model.bufferViews.at(accessor.bufferView);
+                const tinygltf::Buffer& buffer         = model.buffers.at(bufferView.buffer);
 
-                bbox.update(vertex.position);
-
-                if(normalBuffer)    vertex.normal     = glm::make_vec3(&normalBuffer[i * 3]);
-                if(texcoord0Buffer) vertex.texcoord_0 = glm::make_vec2(&texcoord0Buffer[i * 2]);
-                if(texcoord1Buffer) vertex.texcoord_1 = glm::make_vec2(&texcoord1Buffer[i * 2]);
-
-                // ... other attributes
-
-                vertices.push_back(vertex);
+                tangentBuffer = reinterpret_cast<const float*>(&(buffer.data[bufferView.byteOffset + accessor.byteOffset]));
             }
 
             ////////////////////////////////////////////////////////////////////////////////// Extract Indices
@@ -251,7 +305,7 @@ void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& v
 
                 const void* indicesBuffer              = &(buffer.data[bufferView.byteOffset + accessor.byteOffset]); 
 
-                primitive->numIndices   = accessor.count;
+                primitive->indexCount   = accessor.count;
 
                 switch(accessor.componentType)
                 {
@@ -260,7 +314,7 @@ void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& v
                     {
                         primitive->indicesType = GL_UNSIGNED_INT;
                         const unsigned int* bufferIndices = static_cast<const unsigned int*>(indicesBuffer);
-                        for (size_t i = 0; i < primitive->numIndices; ++i)
+                        for (size_t i = 0; i < primitive->indexCount; ++i)
                         {
                             indices.push_back(primitive->startVertices + bufferIndices[i]);
                         }
@@ -272,7 +326,7 @@ void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& v
                     {
                         primitive->indicesType = GL_UNSIGNED_SHORT;
                         const unsigned short* bufferIndices = static_cast<const unsigned short*>(indicesBuffer);
-                        for (size_t i = 0; i < primitive->numIndices; ++i)
+                        for (size_t i = 0; i < primitive->indexCount; ++i)
                         {
                             indices.push_back(primitive->startVertices + bufferIndices[i]);
                         }
@@ -284,7 +338,7 @@ void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& v
                     {
                         primitive->indicesType = GL_UNSIGNED_BYTE;
                         const unsigned char* bufferIndices = static_cast<const unsigned char*>(indicesBuffer);
-                        for (size_t i = 0; i < primitive->numIndices; ++i)
+                        for (size_t i = 0; i < primitive->indexCount; ++i)
                         {
                             indices.push_back(primitive->startVertices + bufferIndices[i]);
                         }
@@ -296,17 +350,28 @@ void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& v
             }
 
             ////////////////////////////////////////////////////////////////////////////////// Extract material ID
-            if (p.material != -1)
-            {
-                primitive->materialID = p.material;
 
-                if (materials.find(p.material) == materials.end())
-                {
-                    // Add new material
-                    loadMaterials(model.materials[p.material], p.material);
-                }
+            // Update vertex buffer
+            for (size_t i = 0; i < primitive->numVertices; ++i)
+            {
+                Vertex vertex;
+
+                // Set vertex attributes
+                assert(positionBuffer);
+                vertex.position                         = glm::make_vec3(&positionBuffer [i * 3]);
+                if (normalBuffer)     vertex.normal     = glm::make_vec3(&normalBuffer   [i * 3]);
+                if (tangentBuffer)    vertex.tangeant   = glm::make_vec4(&tangentBuffer  [i * 4]);
+                if (texcoord0Buffer)  vertex.texcoord_0 = glm::make_vec2(&texcoord0Buffer[i * 2]);
+                if (texcoord1Buffer)  vertex.texcoord_1 = glm::make_vec2(&texcoord1Buffer[i * 2]);
+
+                vertex.materialID = primitive->materialID;
+
+                bbox.update(vertex.position);
+
+                vertices.add(vertex);
             }
-            internalNode->mesh->primitives.push_back(primitive);
+
+            newNode->mesh->primitives.push_back(primitive);
         }
 
     }
@@ -314,302 +379,193 @@ void gltf::Model::processElements(tinygltf::Model& model, std::vector<Vertex>& v
     {
         const tinygltf::Camera& camera = model.cameras.at(node.camera);
 
-        internalNode->camera = new Camera(
-            camera.perspective.aspectRatio, 
-            camera.perspective.yfov, 
-            camera.perspective.zfar, 
-            camera.perspective.znear
-        );
+        newNode->camera = new Camera;
+        *newNode->camera = {
+            camera.name.c_str(),
+            camera.perspective.aspectRatio,
+            camera.perspective.yfov,
+            camera.perspective.zfar,
+            camera.perspective.znear,
+        };
 
-        internalNode->camera->name = camera.name;
+        if (node.translation.size() == 3)
+        {
+            newNode->camera->translation = glm::vec3(node.translation[0], node.translation[1], node.translation[2]);
+        }
 
     }
-
 
     // Node hierarchy
     if (parent)
     {
-        internalNode->parent = parent;
-        parent->children.push_back(internalNode);
+        newNode->parent = parent;
+        parent->children.push_back(newNode);
     }
     else
     {
-        nodes.push_back(internalNode);
+        nodes.push_back(newNode);
     }
 }
 
-void gltf::Model::loadMaterials(tinygltf::Material& material, int materialId)
+void opengltf::Model::loadMaterials(const tinygltf::Model& model)
 {
-        gltf::Material internalMat;
         
-        const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
-
-        // https://substance3d.adobe.com/tutorials/courses/the-pbr-guide-part-2
-        // PBR metallic-roughness workflow : Base Color + [Roughness & Metallic]
-        // Common to all workflow : Ambient occlusion map, Normal map, Height map
-        
-        // Base color texture
-        if (pbr.baseColorTexture.index != -1)
+        for (int i = 0; i < model.materials.size(); ++i)
         {
-            internalMat.hasBaseColorTexture           = true;
-            internalMat.baseColorTexture              = &textures[pbr.baseColorTexture.index];
-            internalMat.baseColorTexture->index       = pbr.baseColorTexture.index;
-            internalMat.baseColorFactor               = glm::make_vec4(pbr.baseColorFactor.data());
-            internalMat.baseColorTexture->texCoordSet = pbr.baseColorTexture.texCoord;
+            const tinygltf::Material& material = model.materials[i];
+            const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
+
+            opengltf::Material mat;
+            mat.name = material.name.c_str();
+            mat.id   = i;
+
+            printf("Loaded material : %s (%i) \n", mat.name, mat.id);
+
+            // https://substance3d.adobe.com/tutorials/courses/the-pbr-guide-part-2
+            // PBR metallic-roughness workflow : Base Color + [Roughness & Metallic]
+            // Common to all workflow : Ambient occlusion map, Normal map, Height map, emissive
+
+            // Base color texture
+            if (pbr.baseColorTexture.index != -1)
+            {
+                mat.base_color_tex              = &textures[pbr.baseColorTexture.index];
+                mat.base_color_tex->id          = pbr.baseColorTexture.index;
+                mat.base_color_factor           = glm::make_vec4(pbr.baseColorFactor.data());
+                mat.base_color_tex->texcoordSet = pbr.baseColorTexture.texCoord;
+            }
+
+            // Metallic-Roughness texture
+            if (pbr.metallicRoughnessTexture.index != -1)
+            {
+                mat.metallic_rough_tex              = &textures[pbr.metallicRoughnessTexture.index];
+                mat.metallic_rough_tex->id          = pbr.metallicRoughnessTexture.index;
+                mat.metallic_rough_tex->texcoordSet = pbr.metallicRoughnessTexture.texCoord;
+                mat.roughness_factor                = pbr.roughnessFactor;
+                mat.metallic_factor                 = pbr.metallicFactor;
+            }
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////// Common to all workflows 
+
+            // Emissive
+            if (material.emissiveTexture.index != -1)
+            {
+                mat.emissive_tex              = &textures[material.emissiveTexture.index];
+                mat.emissive_tex->id          = material.emissiveTexture.index;
+                mat.emissive_tex->texcoordSet = material.emissiveTexture.texCoord;
+                mat.emissive_factor           = glm::make_vec3(material.emissiveFactor.data());
+            }
+
+            // Normal
+            if (material.normalTexture.index != -1)
+            {
+                mat.normal_tex              = &textures[material.normalTexture.index];
+                mat.normal_tex->id          = material.normalTexture.index;
+                mat.normal_tex->texcoordSet = material.normalTexture.texCoord;
+            }
+
+            // Occlusion
+            if (material.occlusionTexture.index != -1)
+            {
+                mat.occlusion_tex              = &textures[material.occlusionTexture.index];
+                mat.occlusion_tex->id          = material.occlusionTexture.index;
+                mat.occlusion_tex->texcoordSet = material.occlusionTexture.texCoord;
+            }
+
+            materials.push_back(mat);
         }
 
-        // Metallic-Roughness texture
-        if (pbr.metallicRoughnessTexture.index != -1)
-        {
-            internalMat.hasMetallicRoughnessTexture           = true;
-            internalMat.metallicRoughnessTexture              = &textures[pbr.metallicRoughnessTexture.index];
-            internalMat.metallicRoughnessTexture->index       = pbr.metallicRoughnessTexture.index;
-            internalMat.metallicRoughnessTexture->texCoordSet = pbr.metallicRoughnessTexture.texCoord;
-            internalMat.roughnessFactor                       = pbr.roughnessFactor;
-            internalMat.metallicFactor                        = pbr.metallicFactor;
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////////////////////// Common to all workflows 
-        
-        // Emissive 
-        if (material.emissiveTexture.index != -1)
-        {
-            internalMat.hasEmissiveTexture           = true;
-            internalMat.emissiveTexture              = &textures[material.emissiveTexture.index];
-            internalMat.emissiveTexture->index       = material.emissiveTexture.index;
-            internalMat.emissiveTexture->texCoordSet = material.emissiveTexture.texCoord;
-            internalMat.emissiveFactor               = glm::make_vec3(material.emissiveFactor.data());
-        }
-
-        // Normal map
-        if (material.normalTexture.index != -1)
-        {
-            internalMat.hasNormalTexture = true;
-            internalMat.normalTexture = &textures[material.normalTexture.index];
-            internalMat.normalTexture->index = material.normalTexture.index;
-            internalMat.normalTexture->texCoordSet = material.normalTexture.texCoord;
-        }
-
-        materials.insert(std::pair<int, Material>(materialId, internalMat)) ;
 }
 
-void gltf::Model::generateTangeantsBitangeants()
+GLuint opengltf::Model::createTextureArray(unsigned int unit)
 {
-    for (size_t i = 0; i < indices.size(); i+=3)
+    GLuint  texture_array;
+    GLsizei base_width    = textures[0].image->width, 
+            base_height   = textures[0].image->height;
+    GLsizei mipLevelCount = 1;
+    GLsizei mipLevel = 0;
+    GLsizei texture_count = images.size();
+
+    glGenTextures(1, &texture_array);
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array);
+    
+    // sampler
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, /*mipmap*/ mipLevel, GL_RGBA, base_width, base_height, texture_count, /*border*/ 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    for (int i = 0; i < images.size(); i++)
     {
+        if (images[i].width == base_width && images[i].height == base_height)
+        {
+            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, /* mipmap */ mipLevel,
+                /* x offset */ 0, /* y offset */ 0, /* z offset == index */ i,
+                base_width, base_height, 1,
+                images[i].nbChannels, images[i].pixelType, images[i].imData.data());
+        }
 
-        unsigned i0 = indices.at(i);
-        unsigned i1 = indices.at(i+1);
-        unsigned i2 = indices.at(i+2);
-
-        Vertex& v0 = vertices.at(i0);
-        Vertex& v1 = vertices.at(i1);
-        Vertex& v2 = vertices.at(i2);
-
-        v0.tangeant   = v1.tangeant   = v2.tangeant   = glm::vec3(0, 0, 0);
-        v0.bitangeant = v1.bitangeant = v2.bitangeant = glm::vec3(0, 0, 0);
-
-        const glm::vec2& uv0 = vertices.at(i0).texcoord_0;
-        const glm::vec2& uv1 = vertices.at(i1).texcoord_0;
-        const glm::vec2& uv2 = vertices.at(i2).texcoord_0;
-
-        glm::vec3 E1       = v1.position - v0.position;
-        glm::vec3 E2       = v2.position - v0.position;
-        glm::vec2 deltaUV1 = uv1 - uv0;
-        glm::vec2 deltaUV2 = uv2 - uv0;
-
-        float div = (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-        float r   = (div == 0.0f) ? 0.0f : 1.0f / div;
-
-        glm::vec3 tangeant   = r * (E1 * deltaUV2.y - E2 * deltaUV1.y);
-        glm::vec3 bitangeant = r * (E2 * deltaUV1.x - E1 * deltaUV2.x);
-
-        v0.tangeant += tangeant;
-        v1.tangeant += tangeant;
-        v2.tangeant += tangeant;
-
-        v0.bitangeant += bitangeant;
-        v1.bitangeant += bitangeant;
-        v2.bitangeant += bitangeant;
     }
 
-    // Gram-Schmidt orthogonalization (to get an orthonormal basis)
-    for (int i = 0; i < vertices.size(); i++)
-    {
-        Vertex& v = vertices.at(i);
-        v.tangeant = glm::normalize((v.tangeant - v.normal) * glm::dot(v.normal, v.tangeant));
-    }
+    printf("Created texture array: %dx%dx%d (%dMb)\n", base_width, base_height, texture_count, 4 * base_width * base_height * texture_count / 1024 / 1024);
+
+    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+    return texture_array;
 }
 
-void gltf::Model::createTextureBuffers()
+void opengltf::Model::loadTextures(tinygltf::Model& model)
 {
-    std::vector<GLuint> texIds;
-    texIds.resize(materials.size());
-
-    GLuint sampler;
-    glGenSamplers(1, &sampler);
-
-    if (samplers.size() > 0)
-    {
-        glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, samplers[0].minFilter);
-        glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, samplers[0].magFilter);
-        glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, samplers[0].wrapS);
-        glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, samplers[0].wrapT);
-    }
-    else
-    {
-        glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-        glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    }
-
-    for (std::unordered_map<int, Material>::iterator it = materials.begin(); it != materials.end(); ++it)
-    {
-        const gltf::Material& mat = it->second;
-
-        if (mat.hasBaseColorTexture)
-        {
-            glActiveTexture(GL_TEXTURE0);
-
-            GLuint id;
-            glGenTextures(1, &id);
-            glBindTexture(GL_TEXTURE_2D, id);
-            
-            glBindSampler(GL_TEXTURE0, sampler);
-            GLuint format = mat.baseColorTexture->image->channels == 3 ? GL_RGB : GL_RGBA;
-            glTexImage2D(GL_TEXTURE_2D,
-                /* level */ 0,
-                /* texel format */ format,
-                /* width, height, border */ mat.baseColorTexture->image->width, mat.baseColorTexture->image->height, 0,
-                /* data format */ format, /* data type */ mat.baseColorTexture->image->pixel_type,
-                /* data */ mat.baseColorTexture->image->imData.data());
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-            mat.baseColorTexture->glBufferId = id;
-            textureBufferIds.push_back(id);
-            glGenerateMipmap(GL_TEXTURE_2D);
-
-        }
-
-        if (mat.hasNormalTexture)
-        {
-            GLuint id;
-            glGenTextures(1, &id);
-
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, id);
-
-            glBindSampler(GL_TEXTURE1, sampler);
-            GLuint format = mat.normalTexture->image->channels == 3 ? GL_RGB : GL_RGBA;
-
-            glTexImage2D(GL_TEXTURE_2D,
-                /* level */ 0,
-                /* texel format */ format,
-                /* width, height, border */ mat.normalTexture->image->width, mat.normalTexture->image->height, 0,
-                /* data format */ format, /* data type */ mat.normalTexture->image->pixel_type,
-                /* data */ mat.normalTexture->image->imData.data());
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-            mat.normalTexture->glBufferId = id;
-            textureBufferIds.push_back(id);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-
-        if (mat.hasMetallicRoughnessTexture)
-        {
-            GLuint id;
-            glGenTextures(1, &id);
-
-            glActiveTexture(GL_TEXTURE2);
-            glBindTexture(GL_TEXTURE_2D, id);
-            glBindSampler(GL_TEXTURE2, sampler);
-
-            glTexImage2D(GL_TEXTURE_2D,
-                /* level */ 0,
-                /* texel format */ GL_RGBA,
-                /* width, height, border */ mat.metallicRoughnessTexture->image->width, mat.metallicRoughnessTexture->image->height, 0,
-                /* data format */ GL_RGBA, /* data type */ mat.metallicRoughnessTexture->image->pixel_type,
-                /* data */ mat.metallicRoughnessTexture->image->imData.data());
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-            mat.metallicRoughnessTexture->glBufferId = id;
-            textureBufferIds.push_back(id);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-
-        if (mat.hasEmissiveTexture)
-        {
-            GLuint id;
-            glGenTextures(1, &id);
-
-            glActiveTexture(GL_TEXTURE3);
-            glBindTexture(GL_TEXTURE_2D, id);
-            
-            glBindSampler(GL_TEXTURE3, sampler);
-            GLuint format = mat.emissiveTexture->image->channels == 3 ? GL_RGB : GL_RGBA;
-
-            glTexImage2D(GL_TEXTURE_2D,
-                /* level */ 0,
-                /* texel format */ format,
-                /* width, height, border */ mat.emissiveTexture->image->width, mat.emissiveTexture->image->height, 0,
-                /* data format */ format, /* data type */ mat.emissiveTexture->image->pixel_type,
-                /* data */ mat.emissiveTexture->image->imData.data());
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-            mat.emissiveTexture->glBufferId = id;
-            textureBufferIds.push_back(id);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-
-
-
-
-    }
-}
-
-void gltf::Model::loadTextures(tinygltf::Model& model)
-{
+    loadImages(model);
+    loadSamplers(model);
+    
     for (const tinygltf::Texture& tex : model.textures)
     {
-        Texture newTexture;
+        Texture texture;
         assert(("Invalid texture index"), tex.source != -1);
 
-        newTexture.name     = tex.name;
-        newTexture.image    = &images[tex.source];
-        
+        texture.name             = tex.name.c_str();
+        texture.image            = &images[tex.source];
+        texture.image->pixelType = images[tex.source].pixelType;
+
         if (tex.sampler != -1)
         {
-            newTexture.sampler = &samplers[tex.sampler];
+            texture.sampler = &samplers[tex.sampler];
+        }
+        
+        // Set texel format
+        switch (images[tex.source].nbChannels)
+        {
+            case 1:  texture.image->nbChannels = GL_RED; break;
+            case 2:  texture.image->nbChannels = GL_RG; break;
+            case 3:  texture.image->nbChannels = GL_RGB; break;
+            case 4:  texture.image->nbChannels = GL_RGBA; break;
+            default: texture.image->nbChannels = GL_RGBA;
         }
 
-        textures.push_back(newTexture);
+        textures.push_back(texture);
     }
 
     std::cerr << "Loaded: " << textures.size() << " textures." << std::endl;
 
 }
 
-void gltf::Model::loadImages(tinygltf::Model& model)
+void opengltf::Model::loadImages(tinygltf::Model& model)
 {
     for (const tinygltf::Image& im : model.images)
     {
-        images.push_back( gltf::Image(im.uri, im.width, im.height, im.bits, im.component, im.pixel_type, im.image) );
+        images.push_back({ im.width, im.height, im.bits, im.component, im.pixel_type, im.uri.c_str(), im.image});
     }
 
     std::cerr << "Loaded: " << images.size() << " images." << std::endl;
 
 }
 
-void gltf::Model::loadSamplers(tinygltf::Model& model)
+void opengltf::Model::loadSamplers(tinygltf::Model& model)
 {
     for (const tinygltf::Sampler& smp : model.samplers)
     {
@@ -619,7 +575,7 @@ void gltf::Model::loadSamplers(tinygltf::Model& model)
     std::cerr << "Loaded: " << samplers.size() << " samplers." << std::endl;
 }
 
-glm::mat4 gltf::Node::getLocalTransform() const
+glm::mat4 opengltf::Node::getLocalTransform() const
 {
     return ( glm::translate(glm::mat4(1.0), translation) * glm::toMat4(rotation) * glm::scale(glm::mat4(1.0), scale) ) * matrix;
 }
@@ -628,7 +584,7 @@ glm::mat4 gltf::Node::getLocalTransform() const
 /// 
 /// </summary>
 /// <returns> Global transform of the node </returns>
-glm::mat4 gltf::Node::getGlobalTransform() 
+glm::mat4 opengltf::Node::getGlobalTransform() 
 {
     // The global transform of a node is given by the product of all local transforms on the path from the root to the respective node. (glTF 2.0 Quick Reference Guide)
     glm::mat4 globalTransform = getLocalTransform();
@@ -642,7 +598,8 @@ glm::mat4 gltf::Node::getGlobalTransform()
     return globalTransform;
 }
 
-gltf::Model::~Model()
+opengltf::Model::~Model()
 {
     glDeleteBuffers(1, textureBufferIds.data());
+    glDeleteBuffers(1, &textureArray);
 }

@@ -12,6 +12,10 @@
 #include "Shader.h"
 #include "Camera.h"
 
+#ifdef OPTICK_DEBUG
+    #include "optick.h"
+#endif
+
 class Application : public IObserver
 {
 public:
@@ -32,7 +36,7 @@ public:
     bool m_Minimized;
 
 private:
-    gltf::Model model;
+    opengltf::Model model;
     Camera m_Camera;
     Shader m_Shader, m_InfiniteGridShader;
     float m_lastFrameTime;

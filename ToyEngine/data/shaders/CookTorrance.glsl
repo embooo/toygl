@@ -8,11 +8,12 @@ in mat4 viewMat;
 
 in vec3 p; 
 in vec3 n; 
-in vec3 t; 
+in vec4 t; 
 in vec3 b; 
+flat in int matId; 
 in vec2 texcoord[2];
 
-// Uniforms
+// Uniforms 
 uniform vec3 cameraPos;
 
 // Textures
@@ -31,6 +32,9 @@ uniform sampler2D emissiveTexture;
 uniform vec3      emissiveFactor;
 
 const float M_PI = 3.141592;
+
+// Toggles
+uniform bool enableNormalMap;
 
 // Cook-Torrance model
 float D(float alpha, float cosThetaH);                  // Normal Distribution Function
@@ -89,6 +93,11 @@ float F(float cosThetaOH, float n2)
     return F0 + (1 - F0) * pow(2, (-5.55473 * cosThetaOH-6.98316)*cosThetaOH);
 }
 
+vec3 fresnelSchlick(vec3 F0, float cosTheta)
+{
+	return F0 + (vec3(1.0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
 
 // Types of light casters
 struct PointLight
@@ -109,46 +118,81 @@ struct DirectionalLight
 uniform float lightRadius;
 uniform vec3  lightPos;
 uniform vec4  lightColor;
+uniform vec3  lightDir;
+
+uniform sampler2DArray textureArray;
+
+struct Material
+{
+    int albedo;
+    int normal;
+    int specular;
+    int emissive;
+    int occlusion;
+    int metalRough;
+
+//    float metallicFactor;
+//    float roughnessFactor;
+//
+//    vec3 emissiveFactor;
+//    vec4 baseColorFactor;
+};
+
+layout(std430, binding = 0) buffer MaterialData
+{
+    Material mats[];
+};
 
 void main()
 {
     vec3 N   = normalize(n); 
-    vec3 B   = normalize(b);
-    vec3 T   = normalize(cross(B, N));
 
-    mat3 tbn = mat3(T, B, N);
+    // Read textures
+    vec4 diffuse           = texture(textureArray, vec3(texcoord[0], mats[matId].albedo ));
+    vec4 normal            = texture(textureArray, vec3(texcoord[0], mats[matId].normal ));
+    vec4 roughnessMetallic = texture(textureArray, vec3(texcoord[0], mats[matId].metalRough));
+    vec4 emissive          = texture(textureArray, vec3(texcoord[0], mats[matId].emissive));
+    vec4 occlusion         = texture(textureArray, vec3(texcoord[0], mats[matId].occlusion));
+    vec4 specular          = texture(textureArray, vec3(texcoord[0], mats[matId].specular));
 
-    // Colors
-    vec4 diffuse           = texture(baseColorTexture, texcoord[currentBaseColorTexcoord]);
-    if(diffuse.a < 0.8) discard;
-    
-    vec4 roughnessMetallic = texture(metallicRoughnessTexture, texcoord[currentMetallicRoughnessTexcoord]);
-    vec4 emissive          = texture(emissiveTexture,          texcoord[0]);
-    vec4 normal            = texture(normalTexture,            texcoord[currentNormalTexcoord]); // tangeant space normalTexture
+    if(enableNormalMap)
+    {
+       // Build the matrix to convert tangeant normal to world space 
+       vec3 T = normalize(vec3(modelMat * vec4(t.xyz,   0.0)));
+       vec3 B = normalize(cross(N, T))  * t.w; // don't forget handedness
+            N = normalize(vec3(modelMat * vec4(n,    0.0)));
 
-//    N = normal.xyz * 2 - 1;
-//    N = normalize(tbn * N);
+       mat3 TBN = mat3(T, B, N);
+
+       // World space normal
+       N = TBN * (normal.rgb * 2 - 1);
+       N = normalize(N);
+    }
+
 
     // Metallic + roughness
-    float r = roughnessMetallic.y; 
-    float m = roughnessMetallic.z; 
+    // https://www.khronos.org/blog/art-pipeline-for-gltf
+    float roughness = roughnessMetallic.g; 
+    float metallic  = roughnessMetallic.b; 
 
     DirectionalLight dl;
-    dl.color     = vec3(1,1,1) ;
-    dl.direction = vec3(-0.5, -0.5, -1);
+    dl.color     = lightColor.rgb ;
+    dl.direction = (normalize(modelMat * vec4(lightDir, 1.0) )).xyz;
 
     PointLight pl;
-    pl.color     = vec3(lightColor);
-    pl.pos       = (modelMat * vec4(lightPos, 1.0)).xyz;
+    pl.color     = lightColor.rgb;
+    pl.pos       = (vec4(lightPos, 1.0) * modelMat).xyz  ;
+//    pl.pos       = (modelMat * vec4(lightPos, 1.0)).xyz  ;
     pl.radius    = lightRadius;
 
     // Point light attenuation
-    vec3 L            = pl.pos - p;
+//    vec3 L            = pl.pos - p; // point light
+    vec3 L            = -dl.direction; // directinal light
     float attenuation = 1 / (pow(length(L), 2) + pow(pl.radius, 2) / 2);
 
     // Directions
-    vec3 camPos = vec3(modelMat * vec4(cameraPos, 1));
-    vec3 o      = normalize(-p); // view direction 
+    vec3 camPos = cameraPos;
+    vec3 o      = normalize(camPos - p); // view direction 
     vec3 l      = normalize(L);
     vec3 h      = normalize(o+l);
     
@@ -158,21 +202,32 @@ void main()
     float cosTheta_oh = max(0, dot(o, h));
 
     // Cook-Torrance BRDF
-    float fr   = (D(r, cosTheta_h) * F(cosTheta_oh, 0.1) * G(r, cosTheta, cosTheta_o)) / (4 * cosTheta * cosTheta_o);
+    float shininess = roughnessMetallic.y;
 
+    float fr   = (D(roughness, cosTheta_h) * F(cosTheta_oh, 0.1) * G(roughness, cosTheta, cosTheta_o)) / (4 * cosTheta * cosTheta_o);
 
-    vec4 frLambert    = diffuse / M_PI;
-    float shininess    = roughnessMetallic.y;
 
     float frBlinnPhong = ((shininess + 8) / (8*M_PI)) * pow(cosTheta_h, shininess);
 
-    vec3 diffuseColor  = frLambert.rgb * pl.color * cosTheta * attenuation;
+    vec3 F0 = mix(vec3(0.04), diffuse.rgb, metallic);
+
+    vec3 F  = fresnelSchlick(F0, max(0.0, dot(h, o)));
+
+    vec3 kd = mix(vec3(1.0) - F, vec3(0.0), metallic);
+
+//    vec3  frLambert = 1.0 * diffuse.rgb;
+    vec3  frLambert = diffuse.rgb / M_PI;
+
+//    vec3 diffuseColor  = frLambert.rgb * dl.color * cosTheta * attenuation; // point light
+//    vec3 diffuseColor  = frBlinnPhong * dl.color * cosTheta;
+    vec3 diffuseColor   = frLambert * dl.color * cosTheta;
+    vec3 specularColor  = frBlinnPhong * dl.color * cosTheta;
     
-    vec4 color = vec4(diffuseColor, 1) * diffuse;
+    vec4 color = vec4(diffuseColor, 1) * vec4(specularColor, 1);
          color = color / (1.0f + color);
 
-    fragment_color = color ;
-//    fragment_color = lightColor ;
+
+    fragment_color = color;
 }
 
 

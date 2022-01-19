@@ -18,4 +18,7 @@ obj
 ToyEngine/*.vcxproj.*
 *.lib
 ToyEngine/imgui.ini
-ToyEngine/data/models/bistro/scene.glb
+ToyEngine/data/models/
+*.vcxproj
+*.filters
+ToyEngine/imgui.ini

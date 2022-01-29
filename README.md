@@ -25,6 +25,7 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 - [x] Physically based rendering - Microfacet BRDF (Cook-Torrance)
 - [x] Point lights, directional lights
 - [x] Normal mapping
+- [x] Gamma correction / Lighting calculations in linear space
 - [ ] Shadow mapping 
 
 ### Rendering methods
@@ -35,6 +36,7 @@ Currently, ToyGL is a forward renderer but the goal is to implement the [Forward
 - [ ] Frustum culling
 
 ### Resources
-[[Brian Karis, SIGGRAPH 2013] Real Shading in Unreal Engine 4](https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf)
+[Real Shading in Unreal Engine 4](https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf) (Brian Karis, Epic Games) <br/>
+[Chapter 24. The Importance of Being Linear](https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-24-importance-being-linear) (L.Gritz, E. d'Eon, GPU Gems 3)
 
 

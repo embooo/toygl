@@ -66,8 +66,10 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
     // 3. Show another simple window.
     if (show_another_window)
     {
-        ImGui::Begin("Shader Parameters", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-        ImGui::Checkbox("Enable Normal Map", &renderer.m_bEnableNormalMap);
+        ImGui::Begin("Shader Parameters",   &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+        ImGui::Checkbox("Normal Mapping",   &renderer.m_bEnableNormalMap);
+        ImGui::Checkbox("Gamma Correction", &renderer.m_bEnableGammaCorrection);
+
         ImGui::Text("Light");               // Display some text (you can use a format strings too)
 
         ImGui::ColorEdit4("Light Color", glm::value_ptr(light.color()));

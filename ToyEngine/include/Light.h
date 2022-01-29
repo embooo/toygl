@@ -44,7 +44,7 @@ class PointLight : public Light
 {
 public:
 	PointLight(const glm::vec3&   position = glm::vec3(0), 
-			   const glm::vec4&   color    = glm::vec4(0,0,0,1),
+			   const glm::vec4&   color    = glm::vec4(1,1,1,1),
 			   const std::string& name     = "PointLight_" + std::to_string(s_Count), 
 			   const Attenuation& method   = Attenuation::INV_SQUARE, 
 			   const LightType&   type     = LightType::POINT_LIGHT);
@@ -65,7 +65,7 @@ class DirectionalLight : public Light
 {
 public:
 	DirectionalLight(const glm::vec3&   direction = glm::vec3(0, -1, 0),
-		             const glm::vec4&   color     = glm::vec4(0, 0, 0, 1),
+		             const glm::vec4&   color     = glm::vec4(1, 1, 1, 1),
 		             const std::string& name      = "DirLight_" + std::to_string(s_Count),
 		             const LightType&   type      = LightType::DIR_LIGHT);
 

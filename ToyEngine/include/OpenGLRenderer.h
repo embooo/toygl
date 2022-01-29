@@ -48,7 +48,7 @@ public:
     // todo : remove 
     glm::vec3 translation = glm::vec3(0.0f), scale = glm::vec3(1.0f);
     bool m_bEnableMultiDrawIndirect;
-    bool m_bEnableNormalMap;
+    bool m_bEnableNormalMap, m_bEnableGammaCorrection;
 private:
     glm::vec4 clearColor;
     std::vector<IndirectParam> drawIndirectCommands;

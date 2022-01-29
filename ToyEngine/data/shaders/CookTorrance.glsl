@@ -35,6 +35,7 @@ const float M_PI = 3.141592;
 
 // Toggles
 uniform bool enableNormalMap;
+uniform bool enableGammaCorrection;
 
 // Cook-Torrance model
 float D(float alpha, float cosThetaH);                  // Normal Distribution Function
@@ -169,6 +170,13 @@ void main()
        N = normalize(N);
     }
 
+    // https://developer.nvidia.com/gpugems/gpugems3/part-iv-image-effects/chapter-24-importance-being-linear
+    if(enableGammaCorrection)
+    {
+        // Manually convert color values to linear space
+        diffuse.rgb = pow(diffuse.rgb, vec3(2.2));
+    }
+
 
     // Metallic + roughness
     // https://www.khronos.org/blog/art-pipeline-for-gltf
@@ -182,7 +190,7 @@ void main()
     PointLight pl;
     pl.color     = lightColor.rgb;
     pl.pos       = (vec4(lightPos, 1.0) * modelMat).xyz  ;
-//    pl.pos       = (modelMat * vec4(lightPos, 1.0)).xyz  ;
+//  pl.pos       = (modelMat * vec4(lightPos, 1.0)).xyz  ;
     pl.radius    = lightRadius;
 
     // Point light attenuation
@@ -221,11 +229,19 @@ void main()
 //    vec3 diffuseColor  = frLambert.rgb * dl.color * cosTheta * attenuation; // point light
 //    vec3 diffuseColor  = frBlinnPhong * dl.color * cosTheta;
     vec3 diffuseColor   = frLambert * dl.color * cosTheta;
-    vec3 specularColor  = frBlinnPhong * dl.color * cosTheta;
+    vec3 specularColor  = fr * dl.color * cosTheta;
     
     vec4 color = vec4(diffuseColor, 1) * vec4(specularColor, 1);
-         color = color / (1.0f + color);
+//         color = color / (1.0f + color);
 
+    
+    if(enableGammaCorrection)
+    {
+        // apply gamma correction to linear space color
+        color.rgb = pow(color.rgb, vec3(1.0/2.2));
+    }
+
+    if(diffuse.a < 0.3) discard;
 
     fragment_color = color;
 }

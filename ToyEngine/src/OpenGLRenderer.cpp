@@ -5,7 +5,7 @@
 #endif
 
 OpenGLRenderer::OpenGLRenderer()
-    : clearColor(glm::vec4(0.2, 0.2, 0.2, 1)), m_bEnableMultiDrawIndirect(false), m_bEnableNormalMap(true)
+    : clearColor(glm::vec4(0.2, 0.2, 0.2, 1)), m_bEnableMultiDrawIndirect(true), m_bEnableNormalMap(true), m_bEnableGammaCorrection(true)
 {
 }
 
@@ -61,6 +61,7 @@ void OpenGLRenderer::render(opengltf::Model& model, Shader& program, Camera& cam
 
     program.setFloat3("cameraPos",  camera.pos());
     program.setInt("enableNormalMap", m_bEnableNormalMap);
+    program.setInt("enableGammaCorrection", m_bEnableGammaCorrection);
 
     if (light.type() == LightType::POINT_LIGHT)
     {

@@ -1,6 +1,4 @@
-#include <fstream>
-#include <iostream>
-#include <sstream>
+#include "PCH.h"
 
 #include "Shader.h"
 #include <glm/gtc/type_ptr.hpp>
@@ -28,6 +26,7 @@ Shader& Shader::operator=(Shader&& other)
 
 Shader::~Shader()
 {
+    std::cerr << "Destructor : Shader\n";
     release();
 }
 

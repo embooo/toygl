@@ -9,9 +9,6 @@
 #include "Light.h"
 #include "OpenGLRenderer.h"
 
-#ifdef OPTICK_DEBUG
-	#include "optick.h"
-#endif
 
 class Window;
 
@@ -25,16 +22,17 @@ public:
 	virtual void render();
 	virtual bool wantCaptureMouse() const;
 	virtual bool wantCaptureKeyboard() const;
+	virtual void terminate();
+
 	virtual ~UserInterface();
 
 private:
-	bool show_demo_window    = true;
+	bool show_demo_window    = false;
 	bool show_another_window = false;
 	bool enable_vsync        = true;
 
 	ImVec4 clear_color       = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 	ImGuiIO* io;
 	Window* m_pWindow;
-	virtual void terminate();
 
 };

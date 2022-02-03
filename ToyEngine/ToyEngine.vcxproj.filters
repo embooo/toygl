@@ -80,6 +80,9 @@
     <ClCompile Include="src\OpenGLRenderer.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\PCH.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="src\UserInterface.cpp">
       <Filter>src</Filter>
     </ClCompile>

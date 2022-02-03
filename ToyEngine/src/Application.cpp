@@ -1,11 +1,8 @@
-#include <cassert>
-#include <iostream>
+#include "PCH.h"
+
 #include "Application.h"
 #include "Light.h"
 
-#ifdef OPTICK_DEBUG
-    #include "optick.h"
-#endif
 
 static Light light     = PointLight();
 static Light& dirLight = DirectionalLight();
@@ -55,9 +52,6 @@ void Application::run()
     {
         if (!m_Minimized)
         {
-#ifdef OPTICK_DEBUG
-            OPTICK_FRAME("MainThread");
-#endif
             glfwPollEvents();
             update(getDeltaTime());
             render();
@@ -71,9 +65,6 @@ void Application::run()
 
 void Application::render()
 {
-#ifdef OPTICK_DEBUG
-    OPTICK_EVENT();
-#endif
     m_glRenderer->clear();
     {
         // Prepare user interface
@@ -93,9 +84,6 @@ void Application::render()
 
 void Application::update(float deltaTime)
 {
-#ifdef OPTICK_DEBUG
-    OPTICK_EVENT();
-#endif
     m_Camera.update(deltaTime);
 }
 
@@ -197,7 +185,9 @@ void Application::printSystemInfo()
 
 Application::~Application()
 {
+    std::cerr << "Destructor : Application\n";
 
+    m_Window->terminate();
 }
 
 

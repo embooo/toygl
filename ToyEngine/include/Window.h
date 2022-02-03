@@ -1,8 +1,6 @@
 #pragma once
+#include "PCH.h"
 
-#include <string>
-#include <vector>
-#include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
 #include "Event.h"
@@ -25,6 +23,7 @@ public:
     void init();
     void swapBuffers();
     void update();
+    void terminate();
 
     bool isClosed() const;
 
@@ -52,7 +51,6 @@ private:
     std::vector<IObserver*> m_Observers;
 
 private:
-    void terminate();
 
 private:
     struct GLContextProps

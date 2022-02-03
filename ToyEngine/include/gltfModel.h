@@ -1,9 +1,5 @@
 #pragma once
-
-#include <iostream>
-
-#include "glm/glm.hpp"
-#include <glm/gtx/quaternion.hpp>
+#include "PCH.h"
 
 #include "Mesh.h"
 #include "OpenGLBuffers.h"

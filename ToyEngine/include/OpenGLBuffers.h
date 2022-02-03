@@ -11,7 +11,8 @@ public:
     virtual void unbind() const = 0;
 
     virtual void release() = 0;
-    virtual ~Buffer() {};
+    
+    virtual ~Buffer() { printf("Destructor : Buffer\n"); };
 };
 /// <summary>
 /// Class representing an OpenGL Vertex Array Object 

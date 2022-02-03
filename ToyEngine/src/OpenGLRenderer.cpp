@@ -1,8 +1,6 @@
-#include "OpenGLRenderer.h"
+#include "PCH.h"
 
-#ifdef OPTICK_DEBUG
-    #include "optick.h"
-#endif
+#include "OpenGLRenderer.h"
 
 OpenGLRenderer::OpenGLRenderer()
     : clearColor(glm::vec4(0.2, 0.2, 0.2, 1)), m_bEnableMultiDrawIndirect(true), m_bEnableNormalMap(true), m_bEnableGammaCorrection(true)
@@ -45,9 +43,6 @@ void OpenGLRenderer::init()
 
 void OpenGLRenderer::render(opengltf::Model& model, Shader& program, Camera& camera, Light& light)
 {
-#ifdef OPTICK_DEBUG
-    OPTICK_EVENT();
-#endif
     program.use();
 
     model.m_VAO.bind();
@@ -154,10 +149,6 @@ void OpenGLRenderer::buildDrawIndirectCommands(opengltf::Model& model)
 
 void OpenGLRenderer::drawNode(opengltf::Node* node, Shader& program, opengltf::Model& model)
 {
-#ifdef OPTICK_DEBUG
-    OPTICK_EVENT();
-#endif
-
     for (const opengltf::Primitive* p : node->mesh->primitives)
     {
         const opengltf::Material& material = model.materials.at(p->materialID);
@@ -218,9 +209,6 @@ void OpenGLRenderer::setClearColor(float r, float g, float b, float a)
 
 void OpenGLRenderer::clear()
 {
-#ifdef OPTICK_DEBUG
-    OPTICK_EVENT();
-#endif
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 

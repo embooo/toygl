@@ -1,5 +1,6 @@
+#include "PCH.h"
+
 #include "OpenGLBuffers.h"
-#include <cassert>
 
 VertexArray::VertexArray()
     : m_Id(0)
@@ -42,6 +43,7 @@ void VertexArray::setupAttribute(int index, int size, GLenum type, bool normaliz
 
 VertexArray::~VertexArray()
 {
+    printf("Destructor : VertexArray\n");
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,6 +86,7 @@ void VertexBuffer::release()
 
 VertexBuffer::~VertexBuffer()
 {
+    printf("Destructor : VertexBuffer\n");
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -126,6 +129,8 @@ void ElementBuffer::release()
 
 ElementBuffer::~ElementBuffer()
 {
+    printf("Destructor : ElementBuffer\n");
+
 }
 
 GLenum ElementBuffer::getComponentType()
@@ -185,4 +190,5 @@ void SSBO::release()
 
 SSBO::~SSBO()
 {
+    printf("Destructor : SSBO\n");
 }

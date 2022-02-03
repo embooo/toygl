@@ -1,5 +1,6 @@
+#include "PCH.h"
+
 #include "Mesh.h"
-#include <iostream>
 
 Mesh::Mesh() : m_VertexArray(0), m_VertexBuffer(0), m_ElementBuffer(0)
 {
@@ -42,6 +43,7 @@ Mesh& Mesh::operator=(Mesh&& other)
 
 Mesh::~Mesh()
 {
+    printf("Destructor : Mesh\n");
 }
 
 /// <summary>

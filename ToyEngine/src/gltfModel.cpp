@@ -1,4 +1,5 @@
 #pragma once
+#include "PCH.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -600,6 +601,6 @@ glm::mat4 opengltf::Node::getGlobalTransform()
 
 opengltf::Model::~Model()
 {
-    glDeleteBuffers(1, textureBufferIds.data());
+    std::cerr << "Destructor : Model\n";
     glDeleteBuffers(1, &textureArray);
 }

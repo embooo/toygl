@@ -1,3 +1,5 @@
+#include "PCH.h"
+
 #include "UserInterface.h"
 #include "Window.h"
 
@@ -98,9 +100,6 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
 
 void UserInterface::render()
 {
-#ifdef OPTICK_DEBUG
-    OPTICK_EVENT();
-#endif
     // Rendering
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -119,11 +118,12 @@ bool UserInterface::wantCaptureKeyboard() const
 void UserInterface::terminate()
 {
     ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
+    //ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
 UserInterface::~UserInterface()
 {
+    std::cerr << "Destructor : UserInterface\n";
     terminate();
 }

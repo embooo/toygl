@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "OpenGLRenderer.h"
 #include "UserInterface.h"
 #include "IObserver.h"
@@ -11,10 +9,6 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "Camera.h"
-
-#ifdef OPTICK_DEBUG
-    #include "optick.h"
-#endif
 
 class Application : public IObserver
 {

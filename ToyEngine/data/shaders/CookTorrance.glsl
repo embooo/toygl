@@ -244,6 +244,7 @@ void main()
     if(diffuse.a < 0.3) discard;
 
     fragment_color = color;
+//    fragment_color = vec4(N, 1);
 }
 
 

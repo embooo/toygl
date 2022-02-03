@@ -1,3 +1,5 @@
+#include "PCH.h"
+
 #include "Light.h"
 #include <iostream>
 

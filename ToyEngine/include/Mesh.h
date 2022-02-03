@@ -1,8 +1,5 @@
 #pragma once
-
-#include <vector>
-#include <glad/glad.h>
-#include <glm/glm.hpp>
+#include "PCH.h"
 
 #include "OpenGLBuffers.h"
 #include "Shader.h"

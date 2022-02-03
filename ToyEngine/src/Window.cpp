@@ -1,7 +1,6 @@
-#include "Window.h"
+#include "PCH.h"
 
-#include <iostream>
-#include <functional>
+#include "Window.h"
 
 // Note : VSync is enabled by default
 Window::Window()
@@ -103,9 +102,6 @@ void Window::init()
 
 void Window::swapBuffers()
 {
-#ifdef OPTICK_DEBUG
-    OPTICK_EVENT();
-#endif
     glfwSwapInterval(m_Props.swapInterval);
     glfwSwapBuffers(m_pWindow);
 }
@@ -181,11 +177,11 @@ void Window::update()
 
 void Window::terminate()
 {
-    glfwDestroyWindow(m_pWindow);
     glfwTerminate();
 }
 
 Window::~Window()
 {
+    std::cerr << "Destructor :  Window\n";
     terminate();
 }

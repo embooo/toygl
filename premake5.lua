@@ -4,20 +4,20 @@ workspace "ToyGL"
 	startproject "ToyGLEngine"
 	
 	outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}" -- ex: Debug-Windows-x64
+	srcdir	  = "ToyEngine/src/"
 
 	include "ToyEngine/thirdparty/Glad"
 	include "ToyEngine/thirdparty/GLFW"
 	include "ToyEngine/thirdparty/ImGui"
 
-
 	IncludePaths = {}
-	IncludePaths["ToyEngine"] = "ToyEngine/include/"
-	IncludePaths["GLFW"]      = "ToyEngine/thirdparty/Glad/include"
-	IncludePaths["Glad"]      = "ToyEngine/thirdparty/GLFW/include"
-	IncludePaths["glm"]       = "ToyEngine/thirdparty/glm/"
-	IncludePaths["tinygltf"]  = "ToyEngine/thirdparty/tinygltf/"
-	IncludePaths["ImGui"]     = "ToyEngine/thirdparty/ImGui/include"
-	IncludePaths["Optick"]     = "ToyEngine/thirdparty/Optick"
+	IncludePaths["ToyEngine"]   = "ToyEngine/include/"
+	IncludePaths["GLFW"]        = "ToyEngine/thirdparty/Glad/include"
+	IncludePaths["Glad"]        = "ToyEngine/thirdparty/GLFW/include"
+	IncludePaths["glm"]         = "ToyEngine/thirdparty/glm/"
+	IncludePaths["tinygltf"]    = "ToyEngine/thirdparty/tinygltf/"
+	IncludePaths["ImGui"]       = "ToyEngine/thirdparty/ImGui/include"
+	IncludePaths["Optick"]      = "ToyEngine/thirdparty/Optick"
 
 
 	
@@ -27,24 +27,30 @@ project "ToyEngine"
 	language "C++"
 	cppdialect "C++17"
 
+	pchheader "PCH.h"
+	pchsource (srcdir .. "PCH.cpp")
+
 	files 
 	{ 
-		"ToyEngine/include/**.h",
-		"ToyEngine/src/**.cpp",
-		"ToyEngine/thirdparty/Optick/**cpp",
+		IncludePaths.ToyEngine .. "**.h",
+		srcdir .. "**.cpp",
+		--"ToyEngine/thirdparty/Optick/**cpp",
 		".clang-tidy"
 	}
 
 	includedirs
 	{
+		"ToyEngine",
 		IncludePaths.ToyEngine,
 		IncludePaths.GLFW,
 		IncludePaths.Glad,
 		IncludePaths.glm,
 		IncludePaths.tinygltf,
-		IncludePaths.ImGui,
-		IncludePaths.Optick
+		IncludePaths.ImGui--,
+		--IncludePaths.Optick
 	}
+
+
 
 	links
 	{

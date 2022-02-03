@@ -1,9 +1,5 @@
 #pragma once
-
-#include <glad/glad.h>
-#include <glm/glm.hpp>
-
-#include <string>
+#include "PCH.h"
 
 class Shader
 {

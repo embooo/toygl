@@ -1,10 +1,5 @@
 #pragma once
-
-#include <string>
-
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "PCH.h"
 
 enum class LightType   { NONE = 0, POINT_LIGHT = 1, DIR_LIGHT = 2 };
 enum class Attenuation { NONE = 0, INV_SQUARE  = 1, NO_SINGULARITY = 2 };

@@ -4,7 +4,7 @@
 
 // Note : VSync is enabled by default
 Window::Window()
-    : m_Props({ "DefaultWindow", 1280, 720, 4, 3, 1, true })
+    : m_Props{ "DefaultWindow", 1280, 720, 4, 5, 1, true }
 {
     init();
 }
@@ -94,10 +94,8 @@ void Window::init()
         static_cast<Window*>(glfwGetWindowUserPointer(window))->notify(WindowCloseEvent());
     });
 
-
     // User interface
     m_UserInterface.init(*this);
-
 }
 
 void Window::swapBuffers()

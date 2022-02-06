@@ -28,6 +28,12 @@ void UserInterface::init(Window& window)
     m_pWindow = &window;
     ImGui_ImplGlfw_InitForOpenGL(window.getRawPtr(), true);
     ImGui_ImplOpenGL3_Init(glsl_version);
+
+    GLTexture tex;
+    tex.create("data/models/Sponza/11474523244911310074.jpg");
+    resources.textures.push_back(tex);
+
+    resources.framebuffer.create(128, 128, GL_RGBA8, GL_RGBA8);
 }
 
 void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Camera& camera,  OpenGLRenderer& renderer)
@@ -62,6 +68,18 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
+        for (GLTexture& texture : resources.textures)
+        {
+            texture.bind();
+            ImGui::ImageButton((void*)texture.getId(), { 128, 128 });
+        }
+
+
+        resources.framebuffer.get(FBAttach::Color).bind();
+        ImGui::ImageButton((void*)resources.framebuffer.get(FBAttach::Color).getId(), {128, 128});
+        //ImGui::ImageButton((void*)resources.framebuffer.get(FBAttach::Depth).getId(), {128, 128});
+
+
         ImGui::End();
     }
 
@@ -92,6 +110,7 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
 
         if (ImGui::Button("Close"))
             show_another_window = false;
+
         ImGui::End();
     }
 
@@ -125,5 +144,10 @@ void UserInterface::terminate()
 UserInterface::~UserInterface()
 {
     std::cerr << "Destructor : UserInterface\n";
+    for (GLTexture& texture : resources.textures)
+        texture.release();
+
+    resources.framebuffer.release();
+
     terminate();
 }

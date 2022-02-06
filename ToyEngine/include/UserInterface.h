@@ -8,9 +8,17 @@
 
 #include "Light.h"
 #include "OpenGLRenderer.h"
+#include "OpenGLTexture.h"
+#include "OpenGLFramebuffer.h"
 
 
 class Window;
+
+struct Resources
+{
+	std::vector<GLTexture> textures;
+	GLFramebuffer framebuffer;
+};
 
 class UserInterface : public IObserver
 {
@@ -31,8 +39,9 @@ private:
 	bool show_another_window = false;
 	bool enable_vsync        = true;
 
+	Resources resources;
+
 	ImVec4 clear_color       = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 	ImGuiIO* io;
 	Window* m_pWindow;
-
 };

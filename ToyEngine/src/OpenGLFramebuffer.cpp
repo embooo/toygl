@@ -15,29 +15,29 @@ void GLFramebuffer::create(int width, int height, int format_color, int format_d
 	// Setup color and depth attachments to the framebuffer
 	if (format_color != 0)
 	{
-		m_color = std::make_unique<GLTexture>();
-		m_color->create(GL_TEXTURE_2D, width, height, format_color);
-		glTextureParameteri(m_color->getId(), GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTextureParameteri(m_color->getId(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glNamedFramebufferTexture(m_info.id, GL_COLOR_ATTACHMENT0, m_color->getId(), 0);
+		m_tex_color = std::make_unique<GLTexture>();
+		m_tex_color->create(GL_TEXTURE_2D, width, height, format_color);
+		glTextureParameteri(m_tex_color->getId(), GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_tex_color->getId(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glNamedFramebufferTexture(m_info.id, GL_COLOR_ATTACHMENT0, m_tex_color->getId(), 0);
 	}
 
 	if (format_depth != 0)
 	{
-		m_depth = std::make_unique<GLTexture>();
-		m_depth->create(GL_TEXTURE_2D, width, height, format_depth);
-		glNamedFramebufferTexture(m_info.id, GL_DEPTH_ATTACHMENT, m_depth->getId(), 0);
+		m_tex_depth = std::make_unique<GLTexture>();
+		m_tex_depth->create(GL_TEXTURE_2D, width, height, format_depth);
+		glNamedFramebufferTexture(m_info.id, GL_DEPTH_ATTACHMENT, m_tex_depth->getId(), 0);
 	}
 
 	auto status = glCheckNamedFramebufferStatus(m_info.id, GL_FRAMEBUFFER);
-	//assert(status == GL_FRAMEBUFFER_COMPLETE);
+	assert(status == GL_FRAMEBUFFER_COMPLETE);
 }
 
 void GLFramebuffer::release()
 {
 	glDeleteFramebuffers(1, &m_info.id);
-	m_color.reset();
-	m_depth.reset();
+	m_tex_color.reset();
+	m_tex_depth.reset();
 }
 
 void GLFramebuffer::bind()
@@ -56,9 +56,9 @@ const GLTexture& GLFramebuffer::get(const FBAttach& attachment)
 	switch (attachment)
 	{
 	case FBAttach::Color:
-		return *m_color.get();
+		return *m_tex_color.get();
 	case FBAttach::Depth:
-		return *m_depth.get();
+		return *m_tex_depth.get();
 
 	default:
 		printf("Unknown framebuffer attachment.");

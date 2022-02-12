@@ -31,12 +31,11 @@ class GLTexture
 public:
 	GLTexture();
 	unsigned int create(const char* filename, int target = GL_TEXTURE_2D);
-	unsigned int create(int target, int width, int height, int format = GL_RGB8, unsigned char *data = nullptr, int unit = 0);
+	unsigned int create(int target, int width, int height, int format = GL_RGB8, unsigned char *data = nullptr, int unit = 0, bool genMipMap = true);
 	const GLTexture& bind() const;
 	unsigned int getId() const;
 	int  width() { return m_info.width; };
 	int  height() { return m_info.height; };
-	bool loadImage(const char *filename);
 	void unbind();
 	void release();
 

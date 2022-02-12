@@ -29,7 +29,7 @@ unsigned int GLTexture::create(const char* filename, int target)
 	return m_info.id;
 }
 
-unsigned int GLTexture::create(int target, int width, int height, int format, unsigned char* data, int unit)
+unsigned int GLTexture::create(int target, int width, int height, int format, unsigned char* data, int unit, bool genMipMap)
 {
 	m_info = { target, width, height, format, unit, 0, GL_UNSIGNED_BYTE };
 
@@ -46,6 +46,11 @@ unsigned int GLTexture::create(int target, int width, int height, int format, un
 
 	glTextureStorage2D(m_info.id,  1, baseToSizedInternalFormat(format), width, height);
 	glTextureSubImage2D(m_info.id, 0, 0, 0, width, height, format, GL_UNSIGNED_BYTE, data);
+
+	if (genMipMap)
+	{
+		glGenerateTextureMipmap(m_info.id);
+	}
 
 	s_Count++;
 	return m_info.id;

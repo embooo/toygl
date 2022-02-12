@@ -26,7 +26,7 @@ public:
 	UserInterface();
 	virtual void onUpdate(Event& event) override;
 	virtual void init(Window& window);
-	virtual void beginFrame(std::vector<GLuint>& tex, Light& light, const Camera& camera,  OpenGLRenderer& renderer);
+	virtual void render(std::vector<GLuint>& tex, Light& light, const Camera& camera,  OpenGLRenderer& renderer);
 	virtual void render();
 	virtual bool wantCaptureMouse() const;
 	virtual bool wantCaptureKeyboard() const;
@@ -35,9 +35,10 @@ public:
 	virtual ~UserInterface();
 
 private:
-	bool show_demo_window    = false;
-	bool show_another_window = false;
-	bool enable_vsync        = true;
+	bool show_demo_window        = false;
+	bool show_another_window     = false;
+	bool show_framebuffer_window = false;
+	bool enable_vsync            = true;
 
 	Resources resources;
 

@@ -36,7 +36,7 @@ void UserInterface::init(Window& window)
     resources.framebuffer.create(128, 128, GL_RGBA8, GL_RGBA8);
 }
 
-void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Camera& camera,  OpenGLRenderer& renderer)
+void UserInterface::render(std::vector<GLuint>& tex, Light& light, const Camera& camera,  OpenGLRenderer& renderer)
 {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -51,6 +51,7 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
         ImGui::Begin("Panel");                          // Create a window called "Hello, world!" and append into it.
 
         ImGui::Checkbox("Shader Parameters", &show_another_window);
+        ImGui::Checkbox("Framebuffer view", &show_framebuffer_window);
 
         if (ImGui::Checkbox("VSync", &enable_vsync))
         {
@@ -68,6 +69,7 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
+
         for (GLTexture& texture : resources.textures)
         {
             texture.bind();
@@ -75,9 +77,6 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
         }
 
 
-        resources.framebuffer.get(FBAttach::Color).bind();
-        ImGui::ImageButton((void*)resources.framebuffer.get(FBAttach::Color).getId(), {128, 128});
-        //ImGui::ImageButton((void*)resources.framebuffer.get(FBAttach::Depth).getId(), {128, 128});
 
 
         ImGui::End();
@@ -115,13 +114,26 @@ void UserInterface::beginFrame(std::vector<GLuint>& tex, Light& light, const Cam
     }
 
 
+    if (show_framebuffer_window)
+    {
+        ImGui::Begin("Framebuffer view", &show_framebuffer_window); 
+
+        resources.framebuffer.get(FBAttach::Color).bind();
+        ImGui::ImageButton((void*)resources.framebuffer.get(FBAttach::Color).getId(), { 128, 128 });
+        resources.framebuffer.get(FBAttach::Depth).bind();
+        ImGui::ImageButton((void*)resources.framebuffer.get(FBAttach::Depth).getId(), {128, 128});
+
+        ImGui::End();
+    }
+
+    // Render
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void UserInterface::render()
 {
-    // Rendering
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 }
 
 bool UserInterface::wantCaptureMouse() const

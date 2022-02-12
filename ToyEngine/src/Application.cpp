@@ -3,14 +3,14 @@
 #include "Application.h"
 #include "Light.h"
 
-
+#include "OpenGLTexture.h"
 static Light light     = PointLight();
 static Light& dirLight = DirectionalLight();
 
 Application::Application()
 {
     // Create a window with a rendering context attached
-    m_Window        = std::make_unique<Window>("ToyGL", 2560, 1080, 4, 3);
+    m_Window        = std::make_unique<Window>("ToyGL", 1280, 720, 4, 5);
 
     // Render commands handler
     m_glRenderer = std::make_unique<OpenGLRenderer>();
@@ -27,21 +27,22 @@ Application::Application()
     m_Shader            .build("./data/shaders/vertex.glsl", "./data/shaders/CookTorrance.glsl");
     m_InfiniteGridShader.build("./data/shaders/VS_InfiniteGrid.glsl", "./data/shaders/FS_InfiniteGrid.glsl");
 
-
     // glTF
     //model.loadFromFile("./data/models/sponza-pbr/scene.glb");
     //model.loadFromFile("./data/models/suzanne/scene.gltf");
     //model.loadFromFile("./data/models/duck/scene.gltf");
     //model.loadFromFile("./data/models/bistro/scene.glb");
+    model.loadFromFile("./data/models/sword/scene.glb");
     //model.loadFromFile("./data/models/lantern4k/scene.gltf");
     //model.loadFromFile("./data/models/MetalRoughSpheres/scene.gltf");
-    model.loadFromFile("./data/models/Sponza/Sponza.gltf");
+    //model.loadFromFile("./data/models/Sponza/Sponza.gltf");
     //model.loadFromFile("./data/models/WaterBottle/glTF-Binary/WaterBottle.glb");
     //model.loadFromFile("./data/models/rifle/scene.glb");
-    m_glRenderer->buildDrawIndirectCommands(model);
+    //model.loadFromFile("./data/models/vikingroom/scene.gltf");
+    m_glRenderer->buildDrawIndirectCommands(model, nullptr);
 
     m_lastFrameTime = (float)glfwGetTime();
-
+    
     m_Minimized = false;
 }
 
@@ -65,18 +66,17 @@ void Application::run()
 
 void Application::render()
 {
-    m_glRenderer->clear();
     {
         // Prepare user interface
-        m_Window->getUI().beginFrame(model.textureBufferIds, dirLight, m_Camera, *m_glRenderer);
         {
             // Render geometry
+           
             m_glRenderer->render(model, m_Shader, m_Camera, dirLight);
             //m_glRenderer->renderIndirect(model, m_Shader, m_Camera, dirLight);
         }
     
         // Render user interface
-        m_Window->getUI().render();
+        m_Window->getUI().render(model.textureBufferIds, dirLight, m_Camera, *m_glRenderer);
     }
 
     m_Window->swapBuffers();

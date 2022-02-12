@@ -43,14 +43,15 @@ void OpenGLRenderer::init()
 
 void OpenGLRenderer::render(opengltf::Model& model, Shader& program, Camera& camera, Light& light)
 {
-    program.use();
-
-    model.m_VAO.bind();
-
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     statistics.reset();
+
+    // Prepare state
+    program.use();
+    model.m_VAO.bind();
     
     program.setMat4("model",      model.modelMat() * glm::scale(scale) * glm::translate(translation));
-    //program.setMat4("model",      glm::scale(scale) * glm::translate(translation));
+  //program.setMat4("model",      glm::scale(scale) * glm::translate(translation));
     program.setMat4("view",       camera.viewMat());
     program.setMat4("projection", camera.projMat());
 
@@ -62,7 +63,6 @@ void OpenGLRenderer::render(opengltf::Model& model, Shader& program, Camera& cam
     {
         program.setFloat3("lightPos", light.pos());
         program.setFloat4("lightColor", light.color());
-
         program.setFloat("lightRadius", ((PointLight&)light).radius());
     }
 
@@ -72,6 +72,7 @@ void OpenGLRenderer::render(opengltf::Model& model, Shader& program, Camera& cam
         program.setFloat4("lightColor", light.color());
     }
 
+    // Render
     if (m_bEnableMultiDrawIndirect)
     {
         // Configure the texture unit pointing to the 3D texture array
@@ -114,32 +115,30 @@ void OpenGLRenderer::render(opengltf::Model& model, Shader& program, Camera& cam
 
 }
 
-void OpenGLRenderer::buildDrawIndirectCommands(opengltf::Model& model)
+void OpenGLRenderer::buildDrawIndirectCommands(opengltf::Model& model, opengltf::Node* curNode, bool firstCall)
 {
-    for (opengltf::Node* node : model.nodes)
+    if (firstCall)
+        curNode = model.nodes[0];
+
+    if (curNode != nullptr)
     {
-        if (node->mesh)
+        if (curNode->mesh)
         {
-            for (const opengltf::Primitive* p : node->mesh->primitives)
+            for (const opengltf::Primitive* p : curNode->mesh->primitives)
             {
                 drawIndirectCommands.push_back({ p->indexCount, 1, p->firstIndex, 0, 0 });
             }
         }
 
-        if (!node->children.empty())
+        if (!curNode->children.empty())
         {
-            for (opengltf::Node* node : node->children)
+            for (opengltf::Node* child : curNode->children)
             {
-                if (node->mesh)
-                {
-                    for (const opengltf::Primitive* p : node->mesh->primitives)
-                    {
-                        drawIndirectCommands.push_back({ p->indexCount, 1, p->firstIndex, 0, 0 });
-                    }
-                }
+                buildDrawIndirectCommands(model, child, false);
             }
         }
     }
+
 
     // Generate OpenGL buffer
     glGenBuffers(1, &drawIndirectBuffer);
@@ -152,39 +151,6 @@ void OpenGLRenderer::drawNode(opengltf::Node* node, Shader& program, opengltf::M
     for (const opengltf::Primitive* p : node->mesh->primitives)
     {
         const opengltf::Material& material = model.materials.at(p->materialID);
-        //if (material.hasBaseColorTexture)
-        //{
-        //    glActiveTexture(GL_TEXTURE0);
-        //    glBindTexture(GL_TEXTURE_2D, material.baseColorTexture->glBufferId);
-        //    program.setInt("baseColorTexture", 0); // set texture unit's ID, not the texture buffer's id !
-        //    program.setInt("currentBaseColorTexcoord", material.baseColorTexture->texCoordSet);
-        //}
-
-        //if (material.hasNormalTexture)
-        //{
-        //    glActiveTexture(GL_TEXTURE1);
-        //    glBindTexture(GL_TEXTURE_2D, material.normalTexture->glBufferId);
-        //    program.setInt("normalTexture", 1);
-        //    program.setInt("currentNormalTexcoord", material.normalTexture->texCoordSet);
-        //}
-
-        //if (material.hasMetallicRoughnessTexture)
-        //{
-        //    glActiveTexture(GL_TEXTURE2);
-        //    glBindTexture(GL_TEXTURE_2D, material.metallicRoughnessTexture->glBufferId);
-        //    program.setInt("metallicRoughnessTexture", 2);
-        //    program.setFloat("metallicFactor", material.metallicFactor);
-        //    program.setFloat("roughnessFactor", material.roughnessFactor);
-        //    program.setInt("currentMetallicRoughnessTexcoord", material.metallicRoughnessTexture->texCoordSet);
-        //}
-
-        //if (material.hasEmissiveTexture)
-        //{
-        //    glActiveTexture(GL_TEXTURE3);
-        //    glBindTexture(GL_TEXTURE_2D, material.emissiveTexture->glBufferId);
-        //    program.setInt("emissiveTexture", 3);
-        //    program.setFloat3("emissiveFactor", material.emissiveFactor);
-        //}
 
         glDrawElements(p->mode, p->indexCount, GL_UNSIGNED_INT, (void*)(p->firstIndex * sizeof(GL_UNSIGNED_INT)));
         
@@ -207,9 +173,5 @@ void OpenGLRenderer::setClearColor(float r, float g, float b, float a)
     clearColor.a = a;
 }
 
-void OpenGLRenderer::clear()
-{
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
 
 

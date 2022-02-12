@@ -28,6 +28,6 @@ public:
 private:
 	inline static int s_Count;
 	FBInfo     m_info;
-	std::unique_ptr<GLTexture> m_color;
-	std::unique_ptr<GLTexture> m_depth;
+	std::unique_ptr<GLTexture> m_tex_color;
+	std::unique_ptr<GLTexture> m_tex_depth;
 };
